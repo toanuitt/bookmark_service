@@ -1,0 +1,62 @@
+basePath: /
+definitions:
+  handler.healthCheckResponse:
+    properties:
+      instance_id:
+        example: instance-test
+        type: string
+      message:
+        example: OK
+        type: string
+      service_name:
+        example: bookmark_service
+        type: string
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Password Generator
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: BookMark_Service API
+  version: "1.0"
+paths:
+  /gen-pass:
+    get:
+      description: Generates a cryptographically secure random password
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Generated password
+          schema:
+            type: string
+        "500":
+          description: Error message
+          schema:
+            type: string
+      summary: Generate a random password
+      tags:
+      - password
+  /health-check:
+    get:
+      description: Health check
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.healthCheckResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health_check
+swagger: "2.0"
