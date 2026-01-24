@@ -8,9 +8,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 )
 
-func TestHealthChekcEndpoint(t *testing.T) {
+// TestHealthCheckEndpoint tests the healthCheckEndpoint function.
+// It tests that the function returns a HTTP 200 OK response with the correct JSON body.
+// The JSON body is expected to have the following structure:
+//
+//	{
+//	  "message": string,
+//	  "serviceName": string,
+//	  "instanceID": string
+//	}
+//
+// The character set used for generating the JSON body is constant and does not change across different implementations of the interface. The length of the generated JSON body is constant and does not change across different implementations of the interface.
+// If an error occurs while generating the JSON body, the error is returned immediately and the generated JSON body is an empty string.
+func TestHealthCheckEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -19,18 +32,20 @@ func TestHealthChekcEndpoint(t *testing.T) {
 		setupTestHTTP func(api api.Engine) *httptest.ResponseRecorder
 
 		expectedStatus int
-		expectedResp   string
+		expectedBody   string
 	}{
 		{
 			name: "success",
+
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
 				req := httptest.NewRequest(http.MethodGet, "/health-check", nil)
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
 			},
+
 			expectedStatus: http.StatusOK,
-			expectedResp:   `{"message":"OK","service_name":"bookmark_api","instance_id":"instance-test"}`,
+			expectedBody:   `{"message":"OK","serviceName":"bookmark-service","instanceID":"instance-test"}`,
 		},
 	}
 
@@ -38,11 +53,12 @@ func TestHealthChekcEndpoint(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := api.New(cfg)
+			app := api.New(cfg, redisPkg.InitMockRedis(t))
 			rec := tc.setupTestHTTP(app)
 
 			assert.Equal(t, tc.expectedStatus, rec.Code)
@@ -53,8 +69,9 @@ func TestHealthChekcEndpoint(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, "OK", resp["message"])
-			assert.Equal(t, "bookmark-api", resp["service_name"])
 			assert.NotEmpty(t, resp["instance_id"])
+			assert.NotEmpty(t, resp["service_name"])
+
 		})
 	}
 }

@@ -3,11 +3,12 @@ package main
 import (
 	_ "github.com/toanuitt/bookmark_service/docs"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 )
 
 //	@title			BookMark_Service API
 //	@version		1.0
-//	@description	Password Generator
+//	@description	API documentation for bookmark service
 //	@termsOfService	http://swagger.io/terms/
 
 //	@contact.name	API Support
@@ -16,12 +17,17 @@ import (
 
 // @license.name	Apache 2.0
 // @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+// @host localhost:8080
 // @BasePath /
 func main() {
 	cfg, err := api.NewConfig()
 	if err != nil {
 		panic(err)
 	}
-	app := api.New(cfg)
+	redisClient, err := redisPkg.NewRedisClient("")
+	if err != nil {
+		panic(err)
+	}
+	app := api.New(cfg, redisClient)
 	app.Start()
 }
