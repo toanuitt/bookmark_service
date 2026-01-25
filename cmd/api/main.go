@@ -3,6 +3,7 @@ package main
 import (
 	_ "github.com/toanuitt/bookmark_service/docs"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	"github.com/toanuitt/bookmark_service/pkg/logger"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 )
 
@@ -20,6 +21,7 @@ import (
 // @host localhost:8080
 // @BasePath /
 func main() {
+	logger.SetLogLevel()
 	cfg, err := api.NewConfig()
 	if err != nil {
 		panic(err)

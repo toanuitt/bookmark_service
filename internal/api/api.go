@@ -78,7 +78,11 @@ func (a *api) RegisterEP() {
 	//Router
 	a.app.GET("/gen-pass", passHandler.GenPass)
 	a.app.GET("/health-check", healthHandler.CheckHealth)
-	a.app.POST("/v1/links/shorten", urlshortenHandler.ShortenURL)
+	routers := a.app.Group("/v1")
+	{
+		routers.POST("/links/shorten", urlshortenHandler.ShortenURL)
+		routers.GET("/links/redirect/:code", urlshortenHandler.GetURL)
+	}
 	// Register Swagger documentation endpoint
 	a.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

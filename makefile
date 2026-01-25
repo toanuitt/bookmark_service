@@ -8,7 +8,7 @@ run:
 
 .PHONY: mocks
 mocks:
-	go generate ./..
+	go generate /home/ductoan/bookmark_service/...
 
 COVERAGE_EXCLUDE=mocks|main.go|test
 COVERAGE_THRESHOLD = 80

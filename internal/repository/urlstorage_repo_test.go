@@ -77,6 +77,22 @@ func TestURLStorage_GetURL(t *testing.T) {
 				assert.Equal(t, url, "https://google.com")
 			},
 		},
+		{
+			name: "code not found",
+			setupMock: func() *redis.Client {
+				return redisPkg.InitMockRedis(t)
+			},
+			expectedErr: redis.Nil,
+		},
+		{
+			name: "error redis closed",
+			setupMock: func() *redis.Client {
+				redisClient := redisPkg.InitMockRedis(t)
+				redisClient.Close()
+				return redisClient
+			},
+			expectedErr: redis.ErrClosed,
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

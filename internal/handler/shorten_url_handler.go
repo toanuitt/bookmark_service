@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/toanuitt/bookmark_service/internal/service"
@@ -10,6 +13,7 @@ import (
 // ShortenURLhandler defines the interface for handling URL shortening HTTP requests.
 type ShortenURLhandler interface {
 	ShortenURL(c *gin.Context)
+	GetURL(c *gin.Context)
 }
 
 // shortenUrl is the concrete implementation of the ShortenURLhandler interface.
@@ -54,6 +58,7 @@ func (h *shortenUrl) ShortenURL(c *gin.Context) {
 
 	code, err := h.svc.ShortlengthURL(c, req.URL, req.ExpireIn)
 	if err != nil {
+		log.Error().Str("url", req.URL).Err(err).Msg("Service return error on ShortenUrl")
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
 		return
 	}
@@ -62,4 +67,45 @@ func (h *shortenUrl) ShortenURL(c *gin.Context) {
 		Message: "Shorten URL generated successfully!",
 		Code:    code,
 	})
+}
+
+// GetUrl shortens a given URL and returns a shortened URL code.
+// @Summary Get URL
+// @Description Get URL by code
+// @Tags URL Shortener
+// @Accept json
+// @Produce json
+// @Param code path string true "Url code" Format(string)
+// @Success 302
+// @Failure 400  "Bad Request - invalid URL or validation error"
+// @Failure 404  "URL not found"
+// @Failure 500  "Internal Server Error"
+// @Router /v1/links/redirect/{code} [get]
+func (h *shortenUrl) GetURL(c *gin.Context) {
+	code := c.Param("code")
+
+	if code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid url code",
+		})
+		return
+	}
+
+	url, err := h.svc.GetURL(c, code)
+	if err != nil {
+		if errors.Is(err, service.ErrURLNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"message": "url not found",
+			})
+			return
+		}
+
+		log.Error().Err(err).Msg("Service return error on GetURL")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+
+	c.Redirect(http.StatusFound, url)
 }
