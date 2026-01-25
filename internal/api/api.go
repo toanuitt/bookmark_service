@@ -5,10 +5,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/toanuitt/bookmark_service/internal/handler"
+	"github.com/toanuitt/bookmark_service/internal/repository"
 	"github.com/toanuitt/bookmark_service/internal/service"
+	"github.com/toanuitt/bookmark_service/pkg/stringutils"
 )
 
 // Engine defines the interface for the API engine.
@@ -21,16 +24,18 @@ type Engine interface {
 // api is the concrete implementation of the Engine interface.
 // It manages the Gin HTTP engine and application configuration.
 type api struct {
-	app *gin.Engine
-	cfg *Config
+	app         *gin.Engine
+	cfg         *Config
+	redisClient *redis.Client
 }
 
 // New creates and returns a new Engine instance with initialized routes and handlers.
 // It takes a Config parameter to configure the API engine.
-func New(cfg *Config) Engine {
+func New(cfg *Config, redisClient *redis.Client) Engine {
 	a := &api{
-		app: gin.New(),
-		cfg: cfg,
+		app:         gin.New(),
+		cfg:         cfg,
+		redisClient: redisClient,
 	}
 	a.RegisterEP()
 	return a
@@ -52,18 +57,28 @@ func (a *api) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Endpoints:
 //   - GET /gen-pass: Generates a random password
 //   - GET /health: Health check endpoint
+//   - POST /v1/links/shorten: Shorten URL endpoint
 //   - GET /swagger/*any: Swagger UI documentation
 func (a *api) RegisterEP() {
-	passSvc := service.NewPassword()
-	healthSvc := service.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID)
 
+	//Repository
+	urlRepo := repository.NewUrlStorage(a.redisClient)
+	healthCheckRepo := repository.NewHealthCheckStorage(a.redisClient)
+
+	//service
+	passSvc := service.NewPassword()
+	healthSvc := service.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, healthCheckRepo)
+	urlshortenSvc := service.NewShortenURL(urlRepo, stringutils.NewCodeGenerator())
+
+	//handler
 	passHandler := handler.NewPassword(passSvc)
 	healthHandler := handler.NewHealthCheck(healthSvc)
+	urlshortenHandler := handler.NewShortenURL(urlshortenSvc)
 
+	//Router
 	a.app.GET("/gen-pass", passHandler.GenPass)
-
 	a.app.GET("/health-check", healthHandler.CheckHealth)
-
+	a.app.POST("/v1/links/shorten", urlshortenHandler.ShortenURL)
 	// Register Swagger documentation endpoint
 	a.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

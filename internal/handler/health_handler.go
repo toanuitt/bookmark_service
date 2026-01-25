@@ -9,6 +9,7 @@ import (
 
 // healthCheckResponse represents the JSON response body for the health check endpoint.
 type healthCheckResponse struct {
+	Error       string `json:"error,omitempty"`
 	Message     string `json:"message" example:"OK"`
 	ServiceName string `json:"service_name" example:"bookmark_service"`
 	InstanceID  string `json:"instance_id" example:"instance-test"`
@@ -38,7 +39,17 @@ func NewHealthCheck(svc service.HealthCheck) HealthCheck {
 // @Failure 500 {string} Internal Server Error
 // @Router /health-check [get]
 func (h *healthHandler) CheckHealth(c *gin.Context) {
-	message, serviceName, instanceID := h.svc.CheckStatus()
+	message, serviceName, instanceID, err := h.svc.CheckStatus(c)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, healthCheckResponse{
+			Error:       "Internal Server Error",
+			Message:     "NOT OK",
+			ServiceName: serviceName,
+			InstanceID:  instanceID,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, healthCheckResponse{
 		Message:     message,
 		ServiceName: serviceName,
