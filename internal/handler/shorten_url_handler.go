@@ -7,24 +7,29 @@ import (
 	"github.com/toanuitt/bookmark_service/internal/service"
 )
 
+// ShortenURLhandler defines the interface for handling URL shortening HTTP requests.
 type ShortenURLhandler interface {
 	ShortenURL(c *gin.Context)
 }
 
+// shortenUrl is the concrete implementation of the ShortenURLhandler interface.
 type shortenUrl struct {
 	svc service.ShortenURLservice
 }
 
+// ShortenURLRequest represents the JSON request body for the URL shortening endpoint.
 type ShortenURLRequest struct {
 	URL      string `json:"url" binding:"required,url" example:"https://example.com"`
-	ExpireIn int    `json:"exp" binding:"required,lte=3600" example:"3600"`
+	ExpireIn int64  `json:"exp" binding:"required,gt=0,lte=3600" example:"3600"`
 }
 
+// ShortenURLResponse represents the JSON response body for the URL shortening endpoint.
 type ShortenURLResponse struct {
 	Message string `json:"message" example:"Shorten URL generated successfully!"`
 	Code    string `json:"code" example:"abc123"`
 }
 
+// NewShortenURL creates and returns a new ShortenURLhandler instance.
 func NewShortenURL(shortenUrlSvc service.ShortenURLservice) ShortenURLhandler {
 	return &shortenUrl{svc: shortenUrlSvc}
 }
@@ -43,7 +48,7 @@ func (h *shortenUrl) ShortenURL(c *gin.Context) {
 	req := &ShortenURLRequest{}
 
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request payload"})
 		return
 	}
 

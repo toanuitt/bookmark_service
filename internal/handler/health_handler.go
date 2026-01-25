@@ -43,7 +43,7 @@ func (h *healthHandler) CheckHealth(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, healthCheckResponse{
 			Error:       "Internal Server Error",
-			Message:     message,
+			Message:     "NOT OK",
 			ServiceName: serviceName,
 			InstanceID:  instanceID,
 		})

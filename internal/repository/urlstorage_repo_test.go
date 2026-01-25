@@ -30,6 +30,15 @@ func TestUrlStorage_StoreUrl(t *testing.T) {
 				assert.Equal(t, url, "https://google.com")
 			},
 		},
+		{
+			name: "redis connection",
+			setupMock: func() *redis.Client {
+				mock := redisPkg.InitMockRedis(t)
+				_ = mock.Close()
+				return mock
+			},
+			expectedErr: redis.ErrClosed,
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

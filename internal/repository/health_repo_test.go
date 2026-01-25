@@ -20,6 +20,14 @@ func TestHealthRepo_Ping(t *testing.T) {
 			name: "normal case",
 			setupMock: func() *redis.Client {
 				redisClient := redisPkg.InitMockRedis(t)
+				return redisClient
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "redis connection error",
+			setupMock: func() *redis.Client {
+				redisClient := redisPkg.InitMockRedis(t)
 				redisClient.Close()
 				return redisClient
 			},

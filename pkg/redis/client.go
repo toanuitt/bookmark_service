@@ -4,6 +4,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// NewRedisClient creates and returns a new Redis client instance.
+// It reads configuration from environment variables and initializes the client.
 func NewRedisClient(envPrefix string) (*redis.Client, error) {
 	cfg, err := newConfig(envPrefix)
 	if err != nil {

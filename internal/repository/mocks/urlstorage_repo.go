@@ -70,7 +70,7 @@ func (_m *UrlStorage) GetUrl(ctx context.Context, code string) (string, error) {
 }
 
 // StoreUrl provides a mock function with given fields: ctx, code, url, exp
-func (_m *UrlStorage) StoreUrl(ctx context.Context, code string, url string, exp int) error {
+func (_m *UrlStorage) StoreUrl(ctx context.Context, code string, url string, exp int64) error {
 	ret := _m.Called(ctx, code, url, exp)
 
 	if len(ret) == 0 {
@@ -78,7 +78,7 @@ func (_m *UrlStorage) StoreUrl(ctx context.Context, code string, url string, exp
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, int) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, int64) error); ok {
 		r0 = rf(ctx, code, url, exp)
 	} else {
 		r0 = ret.Error(0)

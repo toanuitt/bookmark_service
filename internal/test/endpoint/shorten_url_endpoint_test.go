@@ -61,7 +61,7 @@ func TestUrlShortenEndpoint(t *testing.T) {
 
 			expectedStatus:  http.StatusBadRequest,
 			expectedCodeLen: 0,
-			expectedMessage: "Invalid request",
+			expectedMessage: "invalid request payload",
 		},
 	}
 

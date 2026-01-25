@@ -15,7 +15,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 		name                string
 		serviceName         string
 		instanceID          string
-		setupMock           func(*mockrepo.HealthCheckRepo)
+		setupMock           func(mockRepo *mockrepo.HealthCheckRepo, ctx context.Context)
 		expectedMessage     string
 		expectedServiceName string
 		expectedInstanceID  string
@@ -25,8 +25,8 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			name:        "success - redis is healthy",
 			serviceName: "bookmark_service",
 			instanceID:  "instance-test",
-			setupMock: func(mockRepo *mockrepo.HealthCheckRepo) {
-				mockRepo.On("Ping", context.Background()).Return(nil)
+			setupMock: func(mockRepo *mockrepo.HealthCheckRepo, ctx context.Context) {
+				mockRepo.On("Ping", ctx).Return(nil)
 			},
 			expectedMessage:     "OK",
 			expectedServiceName: "bookmark_service",
@@ -37,8 +37,8 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			name:        "redis connection error",
 			serviceName: "bookmark_service",
 			instanceID:  "instance-prod",
-			setupMock: func(mockRepo *mockrepo.HealthCheckRepo) {
-				mockRepo.On("Ping", context.Background()).Return(errors.New("redis: client is closed"))
+			setupMock: func(mockRepo *mockrepo.HealthCheckRepo, ctx context.Context) {
+				mockRepo.On("Ping", ctx).Return(errors.New("redis: client is closed"))
 			},
 			expectedMessage:     "redis: client is closed",
 			expectedServiceName: "bookmark_service",
@@ -49,8 +49,8 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			name:        "different service name",
 			serviceName: "url_shortener_api",
 			instanceID:  "instance-01",
-			setupMock: func(mockRepo *mockrepo.HealthCheckRepo) {
-				mockRepo.On("Ping", context.Background()).Return(nil)
+			setupMock: func(mockRepo *mockrepo.HealthCheckRepo, ctx context.Context) {
+				mockRepo.On("Ping", ctx).Return(nil)
 			},
 			expectedMessage:     "OK",
 			expectedServiceName: "url_shortener_api",
@@ -64,7 +64,8 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			t.Parallel()
 
 			mockRepo := mockrepo.NewHealthCheckRepo(t)
-			tc.setupMock(mockRepo)
+			ctx := context.Background()
+			tc.setupMock(mockRepo, ctx)
 
 			testSvc := NewHealthCheck(tc.serviceName, tc.instanceID, mockRepo)
 

@@ -57,6 +57,7 @@ func (a *api) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Endpoints:
 //   - GET /gen-pass: Generates a random password
 //   - GET /health: Health check endpoint
+//   - POST /v1/links/shorten: Shorten URL endpoint
 //   - GET /swagger/*any: Swagger UI documentation
 func (a *api) RegisterEP() {
 

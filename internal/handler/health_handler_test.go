@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/toanuitt/bookmark_service/internal/service/mocks"
 )
 
@@ -21,7 +20,7 @@ func TestHealthCheckHanlder_CheckHealth(t *testing.T) {
 		name string
 
 		setupRequest   func(ctx *gin.Context)
-		setupMockSvc   func(t *testing.T) *mocks.HealthCheck
+		setupMockSvc   func(t *testing.T, ctx *gin.Context) *mocks.HealthCheck
 		expectedStatus int
 		expectedResp   string
 	}{
@@ -30,9 +29,9 @@ func TestHealthCheckHanlder_CheckHealth(t *testing.T) {
 			setupRequest: func(ctx *gin.Context) {
 				ctx.Request = httptest.NewRequest(http.MethodGet, "/health-check", nil)
 			},
-			setupMockSvc: func(t *testing.T) *mocks.HealthCheck {
+			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.HealthCheck {
 				mockSvc := mocks.NewHealthCheck(t)
-				mockSvc.On("CheckStatus", mock.MatchedBy(func(ctx interface{}) bool { return true })).Return("OK", "bookmark_service", "instance-test", nil)
+				mockSvc.On("CheckStatus", ctx).Return("OK", "bookmark_service", "instance-test", nil)
 				return mockSvc
 			},
 			expectedStatus: http.StatusOK,
@@ -44,24 +43,25 @@ func TestHealthCheckHanlder_CheckHealth(t *testing.T) {
 			setupRequest: func(ctx *gin.Context) {
 				ctx.Request = httptest.NewRequest(http.MethodGet, "/health-check", nil)
 			},
-			setupMockSvc: func(t *testing.T) *mocks.HealthCheck {
+			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.HealthCheck {
 				mockSvc := mocks.NewHealthCheck(t)
-				mockSvc.On("CheckStatus", mock.MatchedBy(func(ctx interface{}) bool { return true })).Return("NOT OK", "bookmark-management", "2025", testConnectError)
+				mockSvc.On("CheckStatus", ctx).Return("OK", "bookmark_service", "instance-test", testConnectError)
 				return mockSvc
 			},
 
 			expectedStatus: http.StatusServiceUnavailable,
-			expectedResp:   `{"error":"Internal Server Error","message":"NOT OK","service_name":"bookmark-management","instance_id":"2025"}`,
+			expectedResp:   `{"error":"Internal Server Error","message":"NOT OK","service_name":"bookmark_service","instance_id":"instance-test"}`,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			gin.SetMode(gin.TestMode)
 			rec := httptest.NewRecorder()
 			gc, _ := gin.CreateTestContext(rec)
 			tc.setupRequest(gc)
-			mockSvc := tc.setupMockSvc(t)
+			mockSvc := tc.setupMockSvc(t, gc)
 			testHanlder := NewHealthCheck(mockSvc)
 			testHanlder.CheckHealth(gc)
 			assert.Equal(t, tc.expectedStatus, rec.Code)

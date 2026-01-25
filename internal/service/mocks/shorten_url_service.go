@@ -42,7 +42,7 @@ func (_m *ShortenURLservice) GetURL(ctx context.Context, url string) (string, er
 }
 
 // ShortlengthURL provides a mock function with given fields: ctx, originURL, expireAt
-func (_m *ShortenURLservice) ShortlengthURL(ctx context.Context, originURL string, expireAt int) (string, error) {
+func (_m *ShortenURLservice) ShortlengthURL(ctx context.Context, originURL string, expireAt int64) (string, error) {
 	ret := _m.Called(ctx, originURL, expireAt)
 
 	if len(ret) == 0 {
@@ -51,16 +51,16 @@ func (_m *ShortenURLservice) ShortlengthURL(ctx context.Context, originURL strin
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, int) (string, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, int64) (string, error)); ok {
 		return rf(ctx, originURL, expireAt)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, int) string); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, int64) string); ok {
 		r0 = rf(ctx, originURL, expireAt)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, int) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, int64) error); ok {
 		r1 = rf(ctx, originURL, expireAt)
 	} else {
 		r1 = ret.Error(1)
