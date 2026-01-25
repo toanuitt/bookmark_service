@@ -47,7 +47,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			expectedMessage:     "redis: client is closed",
 			expectedServiceName: "bookmark_service",
 			expectedInstanceID:  "instance-prod",
-			expectedErr:         nil,
+			expectedErr:         TestRedisClosedErr,
 		},
 		{
 			name:        "different service name",
@@ -59,7 +59,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			expectedMessage:     "OK",
 			expectedServiceName: "url_shortener_api",
 			expectedInstanceID:  "instance-01",
-			expectedErr:         TestRedisClosedErr,
+			expectedErr:         nil,
 		},
 	}
 
