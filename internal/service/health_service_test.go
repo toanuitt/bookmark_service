@@ -9,6 +9,10 @@ import (
 	mockrepo "github.com/toanuitt/bookmark_service/internal/repository/mocks"
 )
 
+var (
+	TestRedisClosedErr = errors.New("redis: client is closed")
+)
+
 func TestHealthCheckService_CheckStatus(t *testing.T) {
 	t.Parallel()
 	testcases := []struct {
@@ -19,7 +23,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 		expectedMessage     string
 		expectedServiceName string
 		expectedInstanceID  string
-		expectedErr         bool
+		expectedErr         error
 	}{
 		{
 			name:        "success - redis is healthy",
@@ -31,7 +35,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			expectedMessage:     "OK",
 			expectedServiceName: "bookmark_service",
 			expectedInstanceID:  "instance-test",
-			expectedErr:         false,
+			expectedErr:         nil,
 		},
 		{
 			name:        "redis connection error",
@@ -43,7 +47,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			expectedMessage:     "redis: client is closed",
 			expectedServiceName: "bookmark_service",
 			expectedInstanceID:  "instance-prod",
-			expectedErr:         true,
+			expectedErr:         nil,
 		},
 		{
 			name:        "different service name",
@@ -55,7 +59,7 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			expectedMessage:     "OK",
 			expectedServiceName: "url_shortener_api",
 			expectedInstanceID:  "instance-01",
-			expectedErr:         false,
+			expectedErr:         TestRedisClosedErr,
 		},
 	}
 
@@ -70,14 +74,14 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			testSvc := NewHealthCheck(tc.serviceName, tc.instanceID, mockRepo)
 
 			// Call the method
-			message, serviceName, instanceID, err := testSvc.CheckStatus(context.Background())
+			message, serviceName, instanceID, err := testSvc.CheckStatus(ctx)
 
 			assert.Equal(t, tc.expectedMessage, message)
 			assert.Equal(t, tc.expectedServiceName, serviceName)
 			assert.Equal(t, tc.expectedInstanceID, instanceID)
 
-			if tc.expectedErr {
-				assert.Error(t, err)
+			if tc.expectedErr != nil {
+				assert.ErrorIs(t, err, tc.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}
