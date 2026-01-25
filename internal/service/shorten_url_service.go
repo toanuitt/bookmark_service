@@ -53,11 +53,9 @@ func (s *shortenURL) ShortlengthURL(ctx context.Context, originURL string, expir
 		if err != nil {
 			return "", err
 		}
-		// If code doesn't exist, we can use it
 		if !exists {
 			break
 		}
-		// If this is the last attempt and code still exists, fail
 		if i == maxRetryAttempts {
 			return "", ErrMaxRetriesExceeded
 		}

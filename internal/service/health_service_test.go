@@ -81,9 +81,8 @@ func TestHealthCheckService_CheckStatus(t *testing.T) {
 			assert.Equal(t, tc.expectedInstanceID, instanceID)
 
 			if tc.expectedErr != nil {
-				assert.ErrorIs(t, err, tc.expectedErr)
-			} else {
-				assert.NoError(t, err)
+				assert.Error(t, err)
+				assert.EqualError(t, err, tc.expectedErr.Error())
 			}
 
 			mockRepo.AssertExpectations(t)

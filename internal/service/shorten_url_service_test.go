@@ -11,6 +11,13 @@ import (
 	mockcodegen "github.com/toanuitt/bookmark_service/pkg/stringutils/mocks"
 )
 
+var (
+	dbErr       = errors.New("database connection failed")
+	genErr      = errors.New("failed to generate code")
+	storeErr    = errors.New("failed to store url")
+	notFoundErr = errors.New("url not found")
+)
+
 func TestShortenURL_ShortenlengthURL(t *testing.T) {
 	t.Parallel()
 	testcases := []struct {
@@ -18,22 +25,22 @@ func TestShortenURL_ShortenlengthURL(t *testing.T) {
 		originURL   string
 		expireAt    int64
 		code        string
-		setupMock   func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) // Sửa: context.Context -> *gin.Context
+		setupMock   func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context)
 		expectedRes string
-		expectedErr bool
+		expectedErr error
 	}{
 		{
 			name:      "normal case",
 			originURL: "https://example.com",
 			expireAt:  int64(3600),
 			code:      "abc1234",
-			setupMock: func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) { // Sửa: context.Context -> *gin.Context
+			setupMock: func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) {
 				mockGen.On("GenerateCode", 7).Return("abc1234", nil)
 				mockRepo.On("Exist", ctx, "abc1234").Return(false, nil)
 				mockRepo.On("StoreUrl", ctx, "abc1234", "https://example.com", int64(3600)).Return(nil)
 			},
 			expectedRes: "abc1234",
-			expectedErr: false,
+			expectedErr: nil,
 		},
 		{
 			name:      "mockRepo.Exist returns error",
@@ -41,31 +48,31 @@ func TestShortenURL_ShortenlengthURL(t *testing.T) {
 			expireAt:  int64(3600),
 			setupMock: func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) {
 				mockGen.On("GenerateCode", 7).Return("abc1234", nil)
-				mockRepo.On("Exist", ctx, "abc1234").Return(false, errors.New("database connection failed"))
+				mockRepo.On("Exist", ctx, "abc1234").Return(false, dbErr)
 			},
 			expectedRes: "",
-			expectedErr: true,
+			expectedErr: dbErr,
 		},
 		{
 			name:      "max retry exceeded - code always exists",
 			originURL: "https://example.com",
 			expireAt:  int64(3600),
 			setupMock: func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) {
-				mockGen.On("GenerateCode", 7).Return("abc1234", nil)
+				mockGen.On("GenerateCode", 7).Return("abc1234", nil).Times(5)
 				mockRepo.On("Exist", ctx, "abc1234").Return(true, nil).Times(5)
 			},
 			expectedRes: "",
-			expectedErr: true,
+			expectedErr: ErrMaxRetriesExceeded,
 		},
 		{
 			name:      "code generator returns error",
 			originURL: "https://example.com",
 			expireAt:  int64(3600),
 			setupMock: func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) {
-				mockGen.On("GenerateCode", 7).Return("", errors.New("failed to generate code"))
+				mockGen.On("GenerateCode", 7).Return("", genErr)
 			},
 			expectedRes: "",
-			expectedErr: true,
+			expectedErr: genErr,
 		},
 		{
 			name:      "store url returns error",
@@ -74,10 +81,10 @@ func TestShortenURL_ShortenlengthURL(t *testing.T) {
 			setupMock: func(mockRepo *mockrepo.UrlStorage, mockGen *mockcodegen.CodeGenerator, ctx *gin.Context) {
 				mockGen.On("GenerateCode", 7).Return("abc1234", nil)
 				mockRepo.On("Exist", ctx, "abc1234").Return(false, nil)
-				mockRepo.On("StoreUrl", ctx, "abc1234", "https://example.com", int64(3600)).Return(errors.New("failed to store url"))
+				mockRepo.On("StoreUrl", ctx, "abc1234", "https://example.com", int64(3600)).Return(storeErr)
 			},
 			expectedRes: "",
-			expectedErr: true,
+			expectedErr: storeErr,
 		},
 		{
 			name:      "retry once then success",
@@ -91,7 +98,7 @@ func TestShortenURL_ShortenlengthURL(t *testing.T) {
 				mockRepo.On("StoreUrl", ctx, "xyz5678", "https://example.com", int64(3600)).Return(nil)
 			},
 			expectedRes: "xyz5678",
-			expectedErr: false,
+			expectedErr: nil,
 		},
 	}
 
@@ -110,14 +117,14 @@ func TestShortenURL_ShortenlengthURL(t *testing.T) {
 			svc := NewShortenURL(mockRepo, mockGen)
 			got, err := svc.ShortlengthURL(gc, tc.originURL, tc.expireAt)
 
-			if tc.expectedErr {
+			if tc.expectedErr != nil {
 				assert.Error(t, err)
+				assert.Equal(t, tc.expectedErr, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedRes, got)
 			}
 
-			// Thêm: AssertExpectations
 			mockRepo.AssertExpectations(t)
 			mockGen.AssertExpectations(t)
 		})
@@ -131,7 +138,7 @@ func TestShortenURL_GetURL(t *testing.T) {
 		code        string
 		setupMock   func(mockRepo *mockrepo.UrlStorage, ctx *gin.Context)
 		expectedRes string
-		expectedErr bool
+		expectedErr error
 	}{
 		{
 			name: "normal case",
@@ -140,16 +147,16 @@ func TestShortenURL_GetURL(t *testing.T) {
 				mockRepo.On("GetUrl", ctx, "abc1234").Return("https://example.com", nil)
 			},
 			expectedRes: "https://example.com",
-			expectedErr: false,
+			expectedErr: nil,
 		},
 		{
 			name: "url not found",
 			code: "invalid",
 			setupMock: func(mockRepo *mockrepo.UrlStorage, ctx *gin.Context) {
-				mockRepo.On("GetUrl", ctx, "invalid").Return("", errors.New("url not found"))
+				mockRepo.On("GetUrl", ctx, "invalid").Return("", notFoundErr)
 			},
 			expectedRes: "",
-			expectedErr: true,
+			expectedErr: notFoundErr,
 		},
 	}
 
@@ -168,8 +175,9 @@ func TestShortenURL_GetURL(t *testing.T) {
 			svc := NewShortenURL(mockRepo, mockGen)
 			got, err := svc.GetURL(gc, tc.code)
 
-			if tc.expectedErr {
+			if tc.expectedErr != nil {
 				assert.Error(t, err)
+				assert.Equal(t, tc.expectedErr, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.expectedRes, got)
