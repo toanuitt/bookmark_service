@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/toanuitt/bookmark_service/internal/repository"
 	"github.com/toanuitt/bookmark_service/pkg/stringutils"
 )
@@ -15,6 +16,7 @@ const (
 
 var (
 	ErrMaxRetriesExceeded = errors.New("Exceed for generate unique code URL")
+	ErrURLNotFound        = errors.New("url not found")
 )
 
 // ShortenURLservice defines the interface for URL shortening operations.
@@ -71,6 +73,9 @@ func (s *shortenURL) ShortlengthURL(ctx context.Context, originURL string, expir
 func (s *shortenURL) GetURL(ctx context.Context, url string) (string, error) {
 	url, err := s.repo.GetUrl(ctx, url)
 	if err != nil {
+		if err == redis.Nil {
+			return "", ErrURLNotFound
+		}
 		return "", err
 	}
 	return url, nil

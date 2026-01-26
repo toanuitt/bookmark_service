@@ -84,6 +84,32 @@ paths:
       summary: Health check
       tags:
       - health_check
+  /v1/links/redirect/{code}:
+    get:
+      consumes:
+      - application/json
+      description: Get URL by code
+      parameters:
+      - description: Url code
+        format: string
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+        "400":
+          description: Bad Request - invalid URL or validation error
+        "404":
+          description: URL not found
+        "500":
+          description: Internal Server Error
+      summary: Get URL
+      tags:
+      - URL Shortener
   /v1/links/shorten:
     post:
       consumes:
