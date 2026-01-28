@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/toanuitt/bookmark_service/docs"
 	"github.com/toanuitt/bookmark_service/internal/handler"
 	"github.com/toanuitt/bookmark_service/internal/repository"
 	"github.com/toanuitt/bookmark_service/internal/service"
@@ -78,6 +79,7 @@ func (a *api) RegisterEP() {
 
 	//Router
 	a.app.GET("/gen-pass", passHandler.GenPass)
+	docs.SwaggerInfo.Host = a.cfg.AppHostName
 	a.app.GET("/health-check", healthHandler.CheckHealth)
 	routers := a.app.Group("/v1")
 	{
