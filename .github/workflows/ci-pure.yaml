@@ -21,21 +21,6 @@ jobs:
       - name: Run unit test
         run: make test
 
-      # ===== SONARQUBE / SONARCLOUD =====
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ secrets.SONAR_ORG }}
-            -Dsonar.language=go
-            -Dsonar.sources=.
-            -Dsonar.tests=.
-            -Dsonar.test.inclusions=**/*_test.go
-            -Dsonar.go.coverage.reportPaths=coverage.out
-
       - name: log in to Docker hub
         if: ${{github.event_name != 'pull_request'}}
         uses: docker/login-action@74b08dae5e0eca7ea9643e0a9facc64a75459cca # v3.3.0
