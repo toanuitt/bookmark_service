@@ -1,10 +1,9 @@
 name: ci-pipeline
-
 on:
   pull_request:
     branches: ["main"]
   push:
-    branches: 
+    branches:
       - "main"
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
@@ -13,23 +12,38 @@ jobs:
   ci_native_pipeline:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v6.0.1
         with:
           go-version: '1.24'
-
+          
       - name: Run unit test
-        run : make test
+        run: make test
+
+      # ===== SONARQUBE / SONARCLOUD =====
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@5c0f768cbb2028f0cf38e05b3f1abc5c01d94c48 # v2.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ secrets.SONAR_ORG }}
+            -Dsonar.language=go
+            -Dsonar.sources=.
+            -Dsonar.tests=.
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.go.coverage.reportPaths=coverage.out
 
       - name: log in to Docker hub
-        if: ${{github.event_name  != 'pull_request'}}
-        uses:  docker/login-action@v3
+        if: ${{github.event_name != 'pull_request'}}
+        uses: docker/login-action@74b08dae5e0eca7ea9643e0a9facc64a75459cca # v3.3.0
         with:
           username: ${{secrets.DOCKER_USERNAME}}
           password: ${{secrets.DOCKER_PASSWORD}}
-      
-      - uses: docker/metadata-action@v5
+
+      - uses: docker/metadata-action@902fa3c054ad9413b7d22471cd1e3b0da87bd99c # v5.6.1
         if: ${{ github.event_name != 'pull_request' }}
         id: meta
         with:
@@ -39,12 +53,8 @@ jobs:
             type=raw,value=dev,enable=${{ github.ref_name == 'main' }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
-
-      
-
-  
