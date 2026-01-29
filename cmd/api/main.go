@@ -8,7 +8,7 @@ import (
 )
 
 //	@title			BookMark_Service API
-//	@version		1.0
+//	@version		1.2
 //	@description	API documentation for bookmark service
 //	@termsOfService	http://swagger.io/terms/
 

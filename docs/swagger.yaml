@@ -48,7 +48,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: BookMark_Service API
-  version: "1.0"
+  version: "1.2"
 paths:
   /gen-pass:
     get:
