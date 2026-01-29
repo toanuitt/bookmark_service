@@ -32,6 +32,8 @@ COPY --from=test-exec ${_outputdir}/coverage.html /
 
 FROM alpine AS final
 
+RUN addgroup -S app && adduser -S app -G app
+
 ARG app_name=app
 ENV TZ=Asia/Ho_Chi_Minh
 
@@ -40,7 +42,11 @@ WORKDIR /app
 COPY --from=build /opt/app/bookmark_service /app/bookmark_service
 COPY --from=build /opt/app/docs /app/docs
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    chown -R app:app /app
+
+USER app
 
 CMD ["/app/bookmark_service"]
  
