@@ -2,6 +2,7 @@ IMG_NAME=toanpham123/bookmark_service
 GIT_TAG := $(shell git describe --tags --exact-match --abbrev=0 2>/dev/null)
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 
+IMG_TAG := $(BRANCH)
 ifeq ($(BRANCH), main)
 	IMG_TAG := dev
 endif
