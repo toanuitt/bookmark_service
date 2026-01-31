@@ -3,8 +3,10 @@ package main
 import (
 	_ "github.com/toanuitt/bookmark_service/docs"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	"github.com/toanuitt/bookmark_service/internal/model"
 	"github.com/toanuitt/bookmark_service/pkg/logger"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
+	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
 
 //	@title			BookMark_Service API
@@ -30,6 +32,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	app := api.New(cfg, redisClient)
+
+	db, err := sqldbPkg.NewClient("")
+	if err != nil {
+		panic(err)
+	}
+	db.AutoMigrate(&model.User{})
+
+	app := api.New(cfg, redisClient, db)
 	app.Start()
 }
