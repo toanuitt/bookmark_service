@@ -26,8 +26,8 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: make docker-login
         env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           
       - name: Push Docker image to DockerHub
         if: ${{ github.event_name != 'pull_request' }}
