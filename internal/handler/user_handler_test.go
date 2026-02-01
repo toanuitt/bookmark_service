@@ -31,7 +31,7 @@ func TestUser_RegisterUser(t *testing.T) {
 				reqBody := map[string]string{
 					"username":     "john_doe",
 					"password":     "password123",
-					"display_name": "John Doe",
+					"display_name": "John Doe2",
 					"email":        "john@example.com",
 				}
 				jsonBody, _ := json.Marshal(reqBody)
@@ -40,11 +40,11 @@ func TestUser_RegisterUser(t *testing.T) {
 			},
 			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.Userservice {
 				mockSvc := mocks.NewUserservice(t)
-				mockSvc.On("Register", ctx, "john_doe", "password123", "John Doe", "john@example.com").
+				mockSvc.On("Register", ctx, "john_doe", "password123", "John Doe2", "john@example.com").
 					Return(&model.User{
 						ID:          "019c134b-582c-7c27-a385-d1bb1dca44c5",
 						Username:    "john_doe",
-						DisplayName: "John Doe",
+						DisplayName: "John Doe2",
 						Email:       "john@example.com",
 					}, nil)
 				return mockSvc
@@ -55,7 +55,7 @@ func TestUser_RegisterUser(t *testing.T) {
 				err := json.Unmarshal([]byte(body), &user)
 				assert.NoError(t, err)
 				assert.Equal(t, "john_doe", user.Username)
-				assert.Equal(t, "John Doe", user.DisplayName)
+				assert.Equal(t, "John Doe2", user.DisplayName)
 				assert.Equal(t, "john@example.com", user.Email)
 			},
 		},
