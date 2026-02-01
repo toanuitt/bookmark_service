@@ -15,6 +15,12 @@ import (
 	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
 
+const (
+	registerEndpoint  = "/v1/users/register"
+	headerContentType = "Content-Type"
+	mimeJSON          = "application/json"
+)
+
 // TestUserRegisterEndpoint tests the user registration endpoint.
 // It tests that the function returns appropriate HTTP responses for valid and invalid inputs.
 // The test covers the following scenarios:
@@ -44,8 +50,9 @@ func TestUserRegisterEndpoint(t *testing.T) {
 				bodyBytes, err := json.Marshal(body)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest(http.MethodPost, "/v1/users/register", bytes.NewReader(bodyBytes))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest(http.MethodPost, registerEndpoint, bytes.NewReader(bodyBytes))
+				req.Header.Set(headerContentType, mimeJSON)
+
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
@@ -59,8 +66,9 @@ func TestUserRegisterEndpoint(t *testing.T) {
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
 				body := []byte("invalid json")
 
-				req := httptest.NewRequest(http.MethodPost, "/v1/users/register", bytes.NewReader(body))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest(http.MethodPost, registerEndpoint, bytes.NewReader(body))
+				req.Header.Set(headerContentType, mimeJSON)
+
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
@@ -80,8 +88,9 @@ func TestUserRegisterEndpoint(t *testing.T) {
 				bodyBytes, err := json.Marshal(body)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest(http.MethodPost, "/v1/users/register", bytes.NewReader(bodyBytes))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest(http.MethodPost, registerEndpoint, bytes.NewReader(bodyBytes))
+				req.Header.Set(headerContentType, mimeJSON)
+
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
