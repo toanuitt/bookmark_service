@@ -11,8 +11,21 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	testUserID       = "019c134b-ca37-75bc-927a-881f2ce5c627"
+	testDisplayName  = "John Doo"
+	testUsername     = "John Doo"
+	testPasswordHash = "$2a$10$wfpS7JvQgcHvHLk86eFs.jhKCIucgr9fhPkyBLVQntSHOnBOS106"
+	testEmail        = "john.doo@example.com"
+
+	testNewEmail       = "new@example.com"
+	testNewUsername    = "Jane Doe"
+	testNewDisplayName = "New User"
+)
+
 func TestUserRepo_CreateUser(t *testing.T) {
 	t.Parallel()
+
 	testcases := []struct {
 		name           string
 		setupDB        func(t *testing.T) *gorm.DB
@@ -27,19 +40,19 @@ func TestUserRepo_CreateUser(t *testing.T) {
 				return fixture.NewFixture(t, &fixture.UserTestDB{})
 			},
 			inputUser: &model.User{
-				ID:          "019c134b-ca37-75bc-927a-881f2ce5c627",
-				DisplayName: "John Doo",
-				Username:    "John Doo",
-				Password:    "$2a$10$wfpS7JvQgcHvHLk86eFs.jhKCIucgr9fhPkyBLVQntSHOnBOS106",
-				Email:       "john.doo@example.com",
+				ID:          testUserID,
+				DisplayName: testDisplayName,
+				Username:    testUsername,
+				Password:    testPasswordHash,
+				Email:       testEmail,
 			},
 			expectedErr: nil,
 			expectedOutput: &model.User{
-				ID:          "019c134b-ca37-75bc-927a-881f2ce5c627",
-				DisplayName: "John Doo",
-				Username:    "John Doo",
-				Password:    "$2a$10$wfpS7JvQgcHvHLk86eFs.jhKCIucgr9fhPkyBLVQntSHOnBOS106",
-				Email:       "john.doo@example.com",
+				ID:          testUserID,
+				DisplayName: testDisplayName,
+				Username:    testUsername,
+				Password:    testPasswordHash,
+				Email:       testEmail,
 			},
 			verifyFunc: func(db *gorm.DB, user *model.User) {
 				var dbUser model.User
@@ -51,21 +64,22 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			},
 		},
 		{
-			name: "success-case create user without ID ",
+			name: "success-case create user without ID",
 			setupDB: func(t *testing.T) *gorm.DB {
 				return fixture.NewFixture(t, &fixture.UserTestDB{})
 			},
 			inputUser: &model.User{
-				DisplayName: "John Doo",
-				Username:    "John Doo",
-				Password:    "$2a$10$wfpS7JvQgcHvHLk86eFs.jhKCIucgr9fhPkyBLVQntSHOnBOS106",
-				Email:       "john.doo@example.com",
+				DisplayName: testDisplayName,
+				Username:    testUsername,
+				Password:    testPasswordHash,
+				Email:       testEmail,
 			},
 			expectedErr:    nil,
 			expectedOutput: nil,
 			verifyFunc: func(db *gorm.DB, user *model.User) {
 				assert.NotEmpty(t, user.ID)
 				assert.Len(t, user.ID, 36)
+
 				var dbUser model.User
 				err := db.Where("username = ?", user.Username).First(&dbUser).Error
 				require.NoError(t, err)
@@ -78,11 +92,11 @@ func TestUserRepo_CreateUser(t *testing.T) {
 				return fixture.NewFixture(t, &fixture.UserTestDB{})
 			},
 			inputUser: &model.User{
-				ID:          "019c134b-ca37-75bc-927a-881f2ce5c627",
-				Username:    "Jane Doe",
-				Password:    "$2a$10$wfpS7JvQgcHvHLk86eFs.jhKCIucgr9fhPkyBLVQntSHOnBOS106",
-				Email:       "new@example.com",
-				DisplayName: "New User",
+				ID:          testUserID,
+				Username:    testNewUsername,
+				Password:    testPasswordHash,
+				Email:       testNewEmail,
+				DisplayName: testNewDisplayName,
 			},
 			expectedErr:    ErrDuplicateKey,
 			expectedOutput: nil,
@@ -93,17 +107,21 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			ctx := t.Context()
 			db := tc.setupDB(t)
 			testRepo := NewUserRepository(db)
+
 			result, err := testRepo.CreateUser(ctx, tc.inputUser)
 			if tc.expectedErr != nil {
-				assert.Equal(t, err, tc.expectedErr)
+				assert.Equal(t, tc.expectedErr, err)
 				return
 			}
+
 			require.NoError(t, err)
 			require.NotNil(t, result)
 
@@ -122,5 +140,4 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			}
 		})
 	}
-
 }
