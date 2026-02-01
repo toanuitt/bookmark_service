@@ -40,13 +40,13 @@ func TestHash_VerifyPassword(t *testing.T) {
 	}{
 		{
 			name:        "correct password",
-			password:    "my-secret-password",
-			input:       "my-secret-password",
+			password:    "my-secret-password1",
+			input:       "my-secret-password1",
 			expectedRes: true,
 		},
 		{
 			name:        "wrong password",
-			password:    "my-secret-password",
+			password:    "my-secret-password2",
 			input:       "wrong-password",
 			expectedRes: false,
 		},
