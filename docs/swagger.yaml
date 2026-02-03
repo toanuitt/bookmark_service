@@ -36,6 +36,28 @@ definitions:
         example: bookmark_service
         type: string
     type: object
+  handler.registerInputBody:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - display_name
+    - email
+    - password
+    - username
+    type: object
+  response.Response:
+    properties:
+      details: {}
+      message:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -144,4 +166,35 @@ paths:
       summary: Shorten URL
       tags:
       - URL Shortener
+  /v1/users/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account using username, password, display name,
+        and email.
+      parameters:
+      - description: User registration payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handler.registerInputBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Register success
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Invalid request or missing required fields
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Register a new user
+      tags:
+      - Users
 swagger: "2.0"

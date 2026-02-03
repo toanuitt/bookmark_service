@@ -160,6 +160,52 @@
                     }
                 }
             }
+        },
+        "/v1/users/register": {
+            "post": {
+                "description": "Create a new user account using username, password, display name, and email.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User registration payload",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.registerInputBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Register success",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -211,6 +257,38 @@
                 "service_name": {
                     "type": "string",
                     "example": "bookmark_service"
+                }
+            }
+        },
+        "handler.registerInputBody": {
+            "type": "object",
+            "required": [
+                "display_name",
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "details": {},
+                "message": {
+                    "type": "string"
                 }
             }
         }

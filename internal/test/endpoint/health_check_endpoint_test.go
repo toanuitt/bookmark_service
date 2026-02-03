@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/toanuitt/bookmark_service/internal/api"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
+	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
 
 // TestHealthCheckEndpoint tests the healthCheckEndpoint function.
@@ -58,7 +59,7 @@ func TestHealthCheckEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := api.New(cfg, redisPkg.InitMockRedis(t))
+			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t))
 			rec := tc.setupTestHTTP(app)
 
 			assert.Equal(t, tc.expectedStatus, rec.Code)
