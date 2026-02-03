@@ -35,7 +35,7 @@ func NewUserRepository(db *gorm.DB) UserRepo {
 func (r *user) CreateUser(ctx context.Context, newUser *model.User) (*model.User, error) {
 	err := r.db.WithContext(ctx).Create(newUser).Error
 	if err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
+		if strings.Contains(strings.ToLower(err.Error()), "unique constraint") {
 			return nil, ErrDuplicateKey
 		}
 		return nil, err

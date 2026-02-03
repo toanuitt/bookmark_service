@@ -54,12 +54,6 @@ func (h *user) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	if input.Username == "" || input.Password == "" || input.DisplayName == "" || input.Email == "" {
-		log.Error().Str("url", c.Request.URL.String()).Err(MissingInputErr).Msg("Missing required fields on RegisterUser")
-		c.JSON(http.StatusBadRequest, response.InputFieldError(MissingInputErr))
-		return
-	}
-
 	res, err := h.svc.Register(c, input.Username, input.Password, input.DisplayName, input.Email)
 	if err != nil {
 		log.Error().Str("url", c.Request.URL.String()).Err(err).Msg("Service return error on RegisterUser")

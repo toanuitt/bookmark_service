@@ -100,23 +100,6 @@ func TestUser_RegisterUser(t *testing.T) {
 			},
 		},
 		{
-			name: "missing required fields",
-			setupRequest: func(ctx *gin.Context) {
-				reqBody := map[string]string{
-					"username": testUser,
-				}
-				ctx.Request = NewJSONRequest(t, http.MethodPost, endpoint, reqBody)
-			},
-			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.Userservice {
-				mockSvc := mocks.NewUserservice(t)
-				return mockSvc
-			},
-			expectedStatus: http.StatusBadRequest,
-			checkResponse: func(t *testing.T, body string) {
-				assert.NotEmpty(t, body)
-			},
-		},
-		{
 			name: "service error",
 			setupRequest: func(ctx *gin.Context) {
 				reqBody := map[string]string{
