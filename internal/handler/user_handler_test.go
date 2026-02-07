@@ -48,8 +48,8 @@ func NewRawJSONRequest(method, url string, raw string) *http.Request {
 	return req
 }
 
-// TestUser_RegisterUser tests the RegisterUser handler
-func TestUser_RegisterUser(t *testing.T) {
+// TestUserRegister tests the RegisterUser handler
+func TestUserRegister(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -162,8 +162,8 @@ func TestUser_RegisterUser(t *testing.T) {
 	}
 }
 
-// TestUser_Login tests the Login handler
-func TestUser_LoginUser(t *testing.T) {
+// TestUserLogin tests the Login handler
+func TestUserLogin(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -279,8 +279,8 @@ func TestUser_LoginUser(t *testing.T) {
 	}
 }
 
-// TestUser_GetProfile tests the GetProfile handler
-func TestUser_GetProfileUser(t *testing.T) {
+// TestUserGetProfile tests the GetProfile handler
+func TestUserGetProfile(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -359,8 +359,8 @@ func TestUser_GetProfileUser(t *testing.T) {
 	}
 }
 
-// TestUser_UpdateProfile tests the UpdateProfile handler
-func TestUser_UpdateProfileUser(t *testing.T) {
+// TestUserUpdateProfile tests the UpdateProfile handler
+func TestUserUpdateProfile(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
