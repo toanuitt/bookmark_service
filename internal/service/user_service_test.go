@@ -164,7 +164,7 @@ func TestUser_Login(t *testing.T) {
 			},
 		},
 		{
-			name:     "user not found",
+			name:     "user not found - login",
 			username: "nonexistent",
 			password: "password123",
 			setupMocks: func(t *testing.T, ctx context.Context, username, password string) (*mockrepo.UserRepo, *jwtMocks.JWTGenerator) {
@@ -289,7 +289,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			},
 		},
 		{
-			name:   "user not found",
+			name:   "user not found - getuserbyid",
 			userID: "nonexistent-id",
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
