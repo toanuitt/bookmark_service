@@ -16,6 +16,15 @@ import (
 	"github.com/toanuitt/bookmark_service/pkg/utils"
 )
 
+const (
+	testUserID      = "user-123"
+	testDisplayName = "Test User"
+	testEmail       = "test@example.com"
+	errUserNotFound = "user not found"
+	updatedName     = "Updated Name"
+	updatedEmail    = "updated@example.com"
+)
+
 func TestUser_Register(t *testing.T) {
 	t.Parallel()
 	testcases := []struct {
@@ -32,8 +41,8 @@ func TestUser_Register(t *testing.T) {
 			name:        "successful registration",
 			username:    "testuser",
 			password:    "password123",
-			displayName: "Test User",
-			email:       "test@example.com",
+			displayName: testDisplayName,
+			email:       testEmail,
 			setupMockRepo: func(t *testing.T, ctx context.Context, username, password, displayName, email string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
 
@@ -57,8 +66,8 @@ func TestUser_Register(t *testing.T) {
 				assert.NotNil(t, res)
 				assert.NotEmpty(t, res.ID)
 				assert.Equal(t, "testuser", res.Username)
-				assert.Equal(t, "Test User", res.DisplayName)
-				assert.Equal(t, "test@example.com", res.Email)
+				assert.Equal(t, testDisplayName, res.DisplayName)
+				assert.Equal(t, testEmail, res.Email)
 				assert.NotEmpty(t, res.Password)
 				assert.True(t, utils.VerifyPassword("password123", res.Password))
 				assert.NotZero(t, res.CreatedAt)
@@ -134,16 +143,16 @@ func TestUser_Login(t *testing.T) {
 
 				hashedPassword := utils.HashPassword(password)
 				user := &model.User{
-					ID:       "user-123",
+					ID:       testUserID,
 					Username: username,
 					Password: hashedPassword,
-					Email:    "test@example.com",
+					Email:    testEmail,
 				}
 
 				mockRepo.On("GetUserByUsername", ctx, username).Return(user, nil)
 				mockJWT.On("GenerateToken", mock.MatchedBy(func(claims jwt.MapClaims) bool {
 					sub, ok := claims["sub"].(string)
-					return ok && sub == "user-123"
+					return ok && sub == testUserID
 				})).Return("test-jwt-token", nil)
 
 				return mockRepo, mockJWT
@@ -162,11 +171,11 @@ func TestUser_Login(t *testing.T) {
 				mockRepo := mockrepo.NewUserRepo(t)
 				mockJWT := jwtMocks.NewJWTGenerator(t)
 
-				mockRepo.On("GetUserByUsername", ctx, username).Return(nil, errors.New("user not found"))
+				mockRepo.On("GetUserByUsername", ctx, username).Return(nil, errors.New(errUserNotFound))
 
 				return mockRepo, mockJWT
 			},
-			expectedError: errors.New("user not found"),
+			expectedError: errors.New(errUserNotFound),
 			validateResult: func(t *testing.T, token string, err error) {
 				assert.Error(t, err)
 				assert.Empty(t, token)
@@ -182,10 +191,10 @@ func TestUser_Login(t *testing.T) {
 
 				hashedPassword := utils.HashPassword("correctpassword")
 				user := &model.User{
-					ID:       "user-123",
+					ID:       testUserID,
 					Username: username,
 					Password: hashedPassword,
-					Email:    "test@example.com",
+					Email:    testEmail,
 				}
 
 				mockRepo.On("GetUserByUsername", ctx, username).Return(user, nil)
@@ -209,10 +218,10 @@ func TestUser_Login(t *testing.T) {
 
 				hashedPassword := utils.HashPassword(password)
 				user := &model.User{
-					ID:       "user-123",
+					ID:       testUserID,
 					Username: username,
 					Password: hashedPassword,
-					Email:    "test@example.com",
+					Email:    testEmail,
 				}
 
 				mockRepo.On("GetUserByUsername", ctx, username).Return(user, nil)
@@ -254,15 +263,15 @@ func TestUser_GetUserByID(t *testing.T) {
 	}{
 		{
 			name:   "successful get user by id",
-			userID: "user-123",
+			userID: testUserID,
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
 
 				expectedUser := &model.User{
 					ID:          userID,
 					Username:    "testuser",
-					Email:       "test@example.com",
-					DisplayName: "Test User",
+					Email:       testEmail,
+					DisplayName: testDisplayName,
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
 				}
@@ -273,10 +282,10 @@ func TestUser_GetUserByID(t *testing.T) {
 			},
 			expectedError: nil,
 			expectedUser: &model.User{
-				ID:          "user-123",
+				ID:          testUserID,
 				Username:    "testuser",
-				Email:       "test@example.com",
-				DisplayName: "Test User",
+				Email:       testEmail,
+				DisplayName: testDisplayName,
 			},
 		},
 		{
@@ -285,11 +294,11 @@ func TestUser_GetUserByID(t *testing.T) {
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
 
-				mockRepo.On("GetUserById", ctx, userID).Return(nil, errors.New("user not found"))
+				mockRepo.On("GetUserById", ctx, userID).Return(nil, errors.New(errUserNotFound))
 
 				return mockRepo
 			},
-			expectedError: errors.New("user not found"),
+			expectedError: errors.New(errUserNotFound),
 			expectedUser:  nil,
 		},
 	}
@@ -333,68 +342,59 @@ func TestUser_UpdateUser(t *testing.T) {
 	}{
 		{
 			name:        "successful update - both fields",
-			userID:      "user-123",
-			displayName: "Updated Name",
-			email:       "updated@example.com",
+			userID:      testUserID,
+			displayName: updatedName,
+			email:       updatedEmail,
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID, displayName, email string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
-
 				mockRepo.On("UpdateUser", ctx, userID, displayName, email).Return(nil)
-
 				return mockRepo
 			},
 			expectedError: nil,
 		},
 		{
 			name:        "successful update - display name only",
-			userID:      "user-123",
-			displayName: "Updated Name",
+			userID:      testUserID,
+			displayName: updatedName,
 			email:       "",
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID, displayName, email string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
-
 				mockRepo.On("UpdateUser", ctx, userID, displayName, email).Return(nil)
-
 				return mockRepo
 			},
 			expectedError: nil,
 		},
 		{
 			name:        "successful update - email only",
-			userID:      "user-123",
+			userID:      testUserID,
 			displayName: "",
-			email:       "updated@example.com",
+			email:       updatedEmail,
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID, displayName, email string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
-
 				mockRepo.On("UpdateUser", ctx, userID, displayName, email).Return(nil)
-
 				return mockRepo
 			},
 			expectedError: nil,
 		},
 		{
 			name:        "no update - both fields empty",
-			userID:      "user-123",
+			userID:      testUserID,
 			displayName: "",
 			email:       "",
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID, displayName, email string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
-				// No mock expectations since the function should return early
 				return mockRepo
 			},
 			expectedError: ErrClientNoUpdate,
 		},
 		{
 			name:        "repository error",
-			userID:      "user-123",
-			displayName: "Updated Name",
-			email:       "updated@example.com",
+			userID:      testUserID,
+			displayName: updatedName,
+			email:       updatedEmail,
 			setupMockRepo: func(t *testing.T, ctx context.Context, userID, displayName, email string) *mockrepo.UserRepo {
 				mockRepo := mockrepo.NewUserRepo(t)
-
 				mockRepo.On("UpdateUser", ctx, userID, displayName, email).Return(errors.New("database error"))
-
 				return mockRepo
 			},
 			expectedError: errors.New("database error"),

@@ -20,20 +20,19 @@ import (
 )
 
 const (
-	registerEndpoint  = "/v1/users/register"
-	loginEndpoint     = "/v1/users/login"
-	selfInfoEndpoint  = "/v1/self/info"
+	registerEndpoint = "/v1/users/register"
+	loginEndpoint    = "/v1/users/login"
+	selfInfoEndpoint = "/v1/self/info"
+
 	headerContentType = "Content-Type"
 	mimeJSON          = "application/json"
 	headerAuth        = "Authorization"
+
+	testUsername    = "John Doe"
+	testBearerToken = "Bearer mock-token"
 )
 
 // TestUserRegisterEndpoint tests the user registration endpoint.
-// It tests that the function returns appropriate HTTP responses for valid and invalid inputs.
-// The test covers the following scenarios:
-// - Successful user registration with valid input (HTTP 200 OK)
-// - Invalid request body (HTTP 400 Bad Request)
-// - Missing required fields (HTTP 400 Bad Request)
 func TestUserRegisterEndpoint(t *testing.T) {
 	t.Parallel()
 
@@ -146,7 +145,7 @@ func TestUserLoginEndpoint(t *testing.T) {
 			},
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
 				body := map[string]string{
-					"username": "John Doe",
+					"username": testUsername,
 					"password": "TestPassword@123",
 				}
 				bodyBytes, err := json.Marshal(body)
@@ -191,15 +190,18 @@ func TestUserLoginEndpoint(t *testing.T) {
 			t.Parallel()
 			jwtGen := tc.setupMockJWTGenerator(t)
 			jwtVal := jwtMocks.NewJWTValidator(t)
+
 			db := sqldbPkg.InitMockDb(t)
 			err := db.AutoMigrate(&model.User{})
 			require.NoError(t, err)
+
 			hashedPwd := utils.HashPassword("TestPassword@123")
 			err = db.Create(&model.User{
-				Username: "John Doe",
+				Username: testUsername,
 				Password: hashedPwd,
 			}).Error
 			require.NoError(t, err)
+
 			app := api.New(
 				cfg,
 				redisPkg.InitMockRedis(t),
@@ -207,11 +209,13 @@ func TestUserLoginEndpoint(t *testing.T) {
 				jwtGen,
 				jwtVal,
 			)
+
 			rec := tc.setupTestHTTP(app)
 			assert.Equal(t, tc.expectedStatus, rec.Code)
 		})
 	}
 }
+
 func TestGetProfileEndpoint(t *testing.T) {
 	t.Parallel()
 
@@ -234,8 +238,8 @@ func TestGetProfileEndpoint(t *testing.T) {
 				return jwtVal
 			},
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
-				req := httptest.NewRequest(http.MethodGet, "/v1/self/info", nil)
-				req.Header.Set("Authorization", "Bearer mock-token")
+				req := httptest.NewRequest(http.MethodGet, selfInfoEndpoint, nil)
+				req.Header.Set(headerAuth, testBearerToken)
 
 				rec := httptest.NewRecorder()
 				api.ServeHTTP(rec, req)
@@ -249,7 +253,7 @@ func TestGetProfileEndpoint(t *testing.T) {
 				return jwtMocks.NewJWTValidator(t)
 			},
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
-				req := httptest.NewRequest(http.MethodGet, "/v1/self/info", nil)
+				req := httptest.NewRequest(http.MethodGet, selfInfoEndpoint, nil)
 
 				rec := httptest.NewRecorder()
 				api.ServeHTTP(rec, req)
@@ -275,7 +279,7 @@ func TestGetProfileEndpoint(t *testing.T) {
 
 			err = db.Create(&model.User{
 				ID:          "1",
-				Username:    "John Doe",
+				Username:    testUsername,
 				DisplayName: "John",
 				Email:       "john@example.com",
 			}).Error
@@ -322,9 +326,9 @@ func TestUpdateProfileEndpoint(t *testing.T) {
 				}
 				b, _ := json.Marshal(body)
 
-				req := httptest.NewRequest(http.MethodPut, "/v1/self/info", bytes.NewReader(b))
+				req := httptest.NewRequest(http.MethodPut, selfInfoEndpoint, bytes.NewReader(b))
 				req.Header.Set(headerContentType, mimeJSON)
-				req.Header.Set("Authorization", "Bearer mock-token")
+				req.Header.Set(headerAuth, testBearerToken)
 
 				rec := httptest.NewRecorder()
 				api.ServeHTTP(rec, req)
@@ -348,9 +352,9 @@ func TestUpdateProfileEndpoint(t *testing.T) {
 				body := map[string]string{}
 				b, _ := json.Marshal(body)
 
-				req := httptest.NewRequest(http.MethodPut, "/v1/self/info", bytes.NewReader(b))
+				req := httptest.NewRequest(http.MethodPut, selfInfoEndpoint, bytes.NewReader(b))
 				req.Header.Set(headerContentType, mimeJSON)
-				req.Header.Set("Authorization", "Bearer mock-token")
+				req.Header.Set(headerAuth, testBearerToken)
 
 				rec := httptest.NewRecorder()
 				api.ServeHTTP(rec, req)
@@ -369,7 +373,7 @@ func TestUpdateProfileEndpoint(t *testing.T) {
 				}
 				b, _ := json.Marshal(body)
 
-				req := httptest.NewRequest(http.MethodPut, "/v1/self/info", bytes.NewReader(b))
+				req := httptest.NewRequest(http.MethodPut, selfInfoEndpoint, bytes.NewReader(b))
 				req.Header.Set(headerContentType, mimeJSON)
 
 				rec := httptest.NewRecorder()
@@ -398,7 +402,7 @@ func TestUpdateProfileEndpoint(t *testing.T) {
 			// Seed user
 			err = db.Create(&model.User{
 				ID:          "1",
-				Username:    "John Doe",
+				Username:    testUsername,
 				DisplayName: "John",
 				Email:       "john@example.com",
 			}).Error

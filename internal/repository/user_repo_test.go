@@ -22,6 +22,8 @@ const (
 	testNewEmail       = "new@example.com"
 	testNewUsername    = "Jane Doe"
 	testNewDisplayName = "New User"
+
+	whereByID = "id = ?"
 )
 
 func TestUserRepo_CreateUser(t *testing.T) {
@@ -57,7 +59,7 @@ func TestUserRepo_CreateUser(t *testing.T) {
 			},
 			verifyFunc: func(db *gorm.DB, user *model.User) {
 				var dbUser model.User
-				err := db.Where("id = ?", user.ID).First(&dbUser).Error
+				err := db.Where(whereByID, user.ID).First(&dbUser).Error
 				require.NoError(t, err)
 				assert.Equal(t, user.Username, dbUser.Username)
 				assert.Equal(t, user.Email, dbUser.Email)
@@ -157,7 +159,6 @@ func TestUserRepo_GetUserByUsername(t *testing.T) {
 			name: "normal case - user exists",
 			setupDB: func(t *testing.T) *gorm.DB {
 				db := fixture.NewFixture(t, &fixture.UserTestDB{})
-				// Create a test user
 				db.Create(&model.User{
 					ID:          testUserID,
 					DisplayName: testDisplayName,
@@ -231,7 +232,6 @@ func TestUserRepo_GetUserById(t *testing.T) {
 			name: "normal case - user exists",
 			setupDB: func(t *testing.T) *gorm.DB {
 				db := fixture.NewFixture(t, &fixture.UserTestDB{})
-				// Create a test user
 				db.Create(&model.User{
 					ID:          testUserID,
 					DisplayName: testDisplayName,
@@ -322,7 +322,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 			expectedErr:  nil,
 			verifyFunc: func(db *gorm.DB, userID string) {
 				var dbUser model.User
-				err := db.Where("id = ?", userID).First(&dbUser).Error
+				err := db.Where(whereByID, userID).First(&dbUser).Error
 				require.NoError(t, err)
 				assert.Equal(t, testNewDisplayName, dbUser.DisplayName)
 				assert.Equal(t, testNewEmail, dbUser.Email)
@@ -348,7 +348,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 			expectedErr:  nil,
 			verifyFunc: func(db *gorm.DB, userID string) {
 				var dbUser model.User
-				err := db.Where("id = ?", userID).First(&dbUser).Error
+				err := db.Where(whereByID, userID).First(&dbUser).Error
 				require.NoError(t, err)
 				assert.Equal(t, testNewDisplayName, dbUser.DisplayName)
 				assert.Equal(t, testEmail, dbUser.Email)
@@ -373,7 +373,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 			expectedErr:  nil,
 			verifyFunc: func(db *gorm.DB, userID string) {
 				var dbUser model.User
-				err := db.Where("id = ?", userID).First(&dbUser).Error
+				err := db.Where(whereByID, userID).First(&dbUser).Error
 				require.NoError(t, err)
 				assert.Equal(t, testDisplayName, dbUser.DisplayName)
 				assert.Equal(t, testNewEmail, dbUser.Email)
@@ -398,7 +398,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 			expectedErr:  nil,
 			verifyFunc: func(db *gorm.DB, userID string) {
 				var dbUser model.User
-				err := db.Where("id = ?", userID).First(&dbUser).Error
+				err := db.Where(whereByID, userID).First(&dbUser).Error
 				require.NoError(t, err)
 				assert.Equal(t, testDisplayName, dbUser.DisplayName)
 				assert.Equal(t, testEmail, dbUser.Email)
@@ -415,7 +415,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 			expectedErr:  nil,
 			verifyFunc: func(db *gorm.DB, userID string) {
 				var count int64
-				db.Model(&model.User{}).Where("id = ?", userID).Count(&count)
+				db.Model(&model.User{}).Where(whereByID, userID).Count(&count)
 				assert.Equal(t, int64(0), count)
 			},
 		},
