@@ -101,7 +101,6 @@ func (h *user) RegisterUser(c *gin.Context) {
 	res, err := h.svc.Register(c, input.Username, input.Password, input.DisplayName, input.Email)
 	switch {
 	case errors.Is(err, dbutils.ErrDuplicationType):
-		log.Warn().Err(err).Msg("RegisterUser: username or email already taken")
 		c.JSON(http.StatusBadRequest, gin.H{"error": usernameTakenError})
 		return
 	case errors.Is(err, nil):
@@ -157,11 +156,9 @@ func (h *user) Login(c *gin.Context) {
 	token, err := h.svc.Login(c, input.Username, input.Password)
 	switch {
 	case errors.Is(err, service.ErrClientErr):
-		log.Warn().Err(err).Msg("Login: client error")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	case errors.Is(err, dbutils.ErrNotFoundType):
-		log.Warn().Err(err).Msg("Login: invalid credentials")
 		c.JSON(http.StatusNotFound, gin.H{"error": invalidCredentialsError})
 		return
 	case errors.Is(err, nil):
@@ -210,6 +207,7 @@ func (h *user) GetProfile(c *gin.Context) {
 
 	res, err := h.svc.GetUserByID(c, userID)
 	if err != nil {
+		log.Error().Err(err).Msg("Getprofile: service returned error")
 		c.JSON(http.StatusInternalServerError, response.InternalErrorResponse)
 		return
 	}
@@ -263,20 +261,18 @@ func (h *user) UpdateProfile(c *gin.Context) {
 	err = h.svc.UpdateUser(c, userID, input.DisplayName, input.Email)
 	switch {
 	case errors.Is(err, service.ErrClientNoUpdate):
-		log.Warn().Err(err).Str("user_id", userID).Msg("UpdateProfile: no update data provided")
 		c.JSON(http.StatusBadRequest, gin.H{"error": noUpdateDataError})
 		return
 	case errors.Is(err, dbutils.ErrDuplicationType):
-		log.Warn().Err(err).Str("user_id", userID).Msg("UpdateProfile: email already taken")
 		c.JSON(http.StatusBadRequest, gin.H{"error": emailTakenError})
 		return
 	case errors.Is(err, nil):
-		log.Warn().Err(err).Str("user_id", userID).Msg("UpdateProfile: email already taken")
 		c.JSON(http.StatusOK, &response.Response{
 			Message: updateSelfInfoSuccessMessage,
 		})
 		return
 	default:
+		log.Error().Err(err).Str("user_id", userID).Msg("UpdateProfile: service error")
 		c.JSON(http.StatusInternalServerError, response.InternalErrorResponse)
 		return
 	}
