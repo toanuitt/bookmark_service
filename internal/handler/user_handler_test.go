@@ -60,7 +60,7 @@ func TestUser_RegisterUser(t *testing.T) {
 		checkResponse  func(t *testing.T, body string)
 	}{
 		{
-			name: "success case",
+			name: "success case - register",
 			setupRequest: func(ctx *gin.Context) {
 				reqBody := &registerInputBody{
 					Username:    testUser,
@@ -174,7 +174,7 @@ func TestUser_Login(t *testing.T) {
 		checkResponse  func(t *testing.T, body string)
 	}{
 		{
-			name: "success case",
+			name: "success case - login",
 			setupRequest: func(ctx *gin.Context) {
 				reqBody := &loginInputBody{
 					Username: testUser,
@@ -291,7 +291,7 @@ func TestUser_GetProfile(t *testing.T) {
 		checkResponse  func(t *testing.T, body string)
 	}{
 		{
-			name: "success case",
+			name: "success case - getprofile",
 			setupContext: func(ctx *gin.Context) {
 				ctx.Request = httptest.NewRequest(http.MethodGet, profileEndpoint, nil)
 				ctx.Set("userID", testID)
@@ -374,41 +374,41 @@ func TestUser_UpdateProfile(t *testing.T) {
 			name: "success case - update both fields",
 			setupRequest: func(ctx *gin.Context) {
 				reqBody := &updateProfileInputBody{
-					DisplayName: "Jane Doe",
-					Email:       "jane@example.com",
+					DisplayName: testName,
+					Email:       testEmail,
 				}
 				ctx.Request = NewJSONRequest(t, http.MethodPut, profileEndpoint, reqBody)
 				ctx.Set("userID", testID)
 			},
 			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.Userservice {
 				mockSvc := mocks.NewUserservice(t)
-				mockSvc.On("UpdateUser", ctx, testID, "Jane Doe", "jane@example.com").
+				mockSvc.On("UpdateUser", ctx, testID, testName, testEmail).
 					Return(nil)
 				return mockSvc
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, body string) {
-				assert.Contains(t, body, "Edit current user successfully!")
+				assert.Contains(t, body, updateSelfInfoSuccessMessage)
 			},
 		},
 		{
 			name: "success case - update display name only",
 			setupRequest: func(ctx *gin.Context) {
 				reqBody := &updateProfileInputBody{
-					DisplayName: "Jane Doe",
+					DisplayName: testName,
 				}
 				ctx.Request = NewJSONRequest(t, http.MethodPut, profileEndpoint, reqBody)
 				ctx.Set("userID", testID)
 			},
 			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.Userservice {
 				mockSvc := mocks.NewUserservice(t)
-				mockSvc.On("UpdateUser", ctx, testID, "Jane Doe", "").
+				mockSvc.On("UpdateUser", ctx, testID, testName, "").
 					Return(nil)
 				return mockSvc
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, body string) {
-				assert.Contains(t, body, "Edit current user successfully!")
+				assert.Contains(t, body, updateSelfInfoSuccessMessage)
 			},
 		},
 		{
@@ -428,7 +428,7 @@ func TestUser_UpdateProfile(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, body string) {
-				assert.Contains(t, body, "Edit current user successfully!")
+				assert.Contains(t, body, updateSelfInfoSuccessMessage)
 			},
 		},
 		{
@@ -473,14 +473,14 @@ func TestUser_UpdateProfile(t *testing.T) {
 			name: "internal server error",
 			setupRequest: func(ctx *gin.Context) {
 				reqBody := &updateProfileInputBody{
-					DisplayName: "Jane Doe",
+					DisplayName: testName,
 				}
 				ctx.Request = NewJSONRequest(t, http.MethodPut, profileEndpoint, reqBody)
 				ctx.Set("userID", testID)
 			},
 			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.Userservice {
 				mockSvc := mocks.NewUserservice(t)
-				mockSvc.On("UpdateUser", ctx, testID, "Jane Doe", "").
+				mockSvc.On("UpdateUser", ctx, testID, testName, "").
 					Return(errors.New("database connection failed"))
 				return mockSvc
 			},

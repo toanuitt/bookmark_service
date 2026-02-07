@@ -13,20 +13,45 @@ import (
 )
 
 var (
+	// MissingInputErr indicates that required fields are missing from the request
 	MissingInputErr = errors.New("missing required fields")
 )
 
+// Response message constants
+const (
+	// Success messages
+	registerSuccessMessage       = "Register an user successfully!"
+	loginSuccessMessage          = "Logged in successfully!"
+	updateSelfInfoSuccessMessage = "Edit current user successfully!"
+
+	// Error messages - Authentication
+	invalidTokenError = "Invalid Token"
+
+	// Error messages - Registration
+	usernameTakenError = "username or email is already taken"
+
+	// Error messages - Login
+	invalidCredentialsError = "invalid username or password"
+
+	// Error messages - Profile Update
+	noUpdateDataError = "at least one field must be provided for update"
+	emailTakenError   = "email is already taken"
+)
+
+// Userhandler defines the interface for user-related HTTP handlers
 type Userhandler interface {
 	RegisterUser(c *gin.Context)
 	Login(c *gin.Context)
 	GetProfile(c *gin.Context)
-	UpdateProfile(c *gin.Context) // FIXED: Added missing interface method
+	UpdateProfile(c *gin.Context)
 }
 
+// user implements the Userhandler interface
 type user struct {
 	svc service.Userservice
 }
 
+// NewUser creates a new user handler instance
 func NewUser(svc service.Userservice) Userhandler {
 	return &user{svc: svc}
 }
@@ -39,6 +64,7 @@ type registerInputBody struct {
 	Email       string `json:"email" binding:"required,email"`
 }
 
+// registerUserData represents the user data returned after successful registration
 type registerUserData struct {
 	ID          string `json:"id"`
 	Username    string `json:"username"`
@@ -47,6 +73,7 @@ type registerUserData struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
+// registerResBody represents the response body for user registration
 type registerResBody struct {
 	Data    *registerUserData `json:"data"`
 	Message string            `json:"message"`
@@ -73,7 +100,7 @@ func (h *user) RegisterUser(c *gin.Context) {
 	res, err := h.svc.Register(c, input.Username, input.Password, input.DisplayName, input.Email)
 	switch {
 	case errors.Is(err, dbutils.ErrDuplicationType):
-		c.JSON(http.StatusBadRequest, gin.H{"message": "username or email is already taken"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": usernameTakenError})
 		return
 	case errors.Is(err, nil):
 	default:
@@ -82,7 +109,7 @@ func (h *user) RegisterUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, &registerResBody{
-		Message: "Register an user successfully!",
+		Message: registerSuccessMessage,
 		Data: &registerUserData{
 			ID:          res.ID,
 			Username:    res.Username,
@@ -93,16 +120,20 @@ func (h *user) RegisterUser(c *gin.Context) {
 	})
 }
 
+// loginInputBody represents the request payload for user login
 type loginInputBody struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required,gte=8"`
 }
 
+// loginResBody represents the response body for user login
 type loginResBody struct {
 	Message string `json:"message"`
 	Data    string `json:"data"`
 }
 
+// Login authenticates a user and returns a JWT token.
+//
 // @Summary Login a user
 // @Description Authenticate a user with username and password, returns a JWT token
 // @Tags Users
@@ -126,7 +157,7 @@ func (h *user) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	case errors.Is(err, dbutils.ErrNotFoundType):
-		c.JSON(http.StatusNotFound, gin.H{"error": "invalid username or password"})
+		c.JSON(http.StatusNotFound, gin.H{"error": invalidCredentialsError})
 		return
 	case errors.Is(err, nil):
 	default:
@@ -136,15 +167,17 @@ func (h *user) Login(c *gin.Context) {
 
 	// return token
 	c.JSON(http.StatusOK, &loginResBody{
-		Message: "Logged in successfully!",
-		Data:    token})
+		Message: loginSuccessMessage,
+		Data:    token,
+	})
 }
 
+// profileResBody represents the response body for user profile
 type profileResBody struct {
 	Data *model.User `json:"data"`
 }
 
-// GetProfile returns current user's profile based on JWT token
+// GetProfile returns the current user's profile based on JWT token.
 //
 // @Summary Get current user profile
 // @Description Get profile of the currently authenticated user using JWT in Authorization header
@@ -159,13 +192,13 @@ type profileResBody struct {
 func (h *user) GetProfile(c *gin.Context) {
 	userIDvalue, ok := c.Get("userID")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": invalidTokenError})
 		return
 	}
 
 	userID, ok := userIDvalue.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": invalidTokenError})
 		return
 	}
 
@@ -180,16 +213,13 @@ func (h *user) GetProfile(c *gin.Context) {
 	})
 }
 
+// updateProfileInputBody represents the request payload for profile updates
 type updateProfileInputBody struct {
 	DisplayName string `json:"display_name" binding:"omitempty"`
 	Email       string `json:"email" binding:"omitempty,email"`
 }
 
-const (
-	updateSelfInfoSuccessMessage = "Edit current user successfully!"
-)
-
-// UpdateProfile handles updating current user's profile.
+// UpdateProfile handles updating the current user's profile.
 //
 // @Summary Update current user profile
 // @Description Update display name and/or email of the currently authenticated user
@@ -207,13 +237,13 @@ const (
 func (h *user) UpdateProfile(c *gin.Context) {
 	userIDvalue, ok := c.Get("userID")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": invalidTokenError})
 		return
 	}
 
 	userID, ok := userIDvalue.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": invalidTokenError})
 		return
 	}
 
@@ -227,10 +257,10 @@ func (h *user) UpdateProfile(c *gin.Context) {
 	err = h.svc.UpdateUser(c, userID, input.DisplayName, input.Email)
 	switch {
 	case errors.Is(err, service.ErrClientNoUpdate):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "at least one field must be provided for update"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": noUpdateDataError})
 		return
 	case errors.Is(err, dbutils.ErrDuplicationType):
-		c.JSON(http.StatusBadRequest, gin.H{"error": "email is already taken"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": emailTakenError})
 		return
 	case errors.Is(err, nil):
 		c.JSON(http.StatusOK, &response.Response{

@@ -178,7 +178,7 @@ func TestUserRepo_GetUserByUsername(t *testing.T) {
 			},
 		},
 		{
-			name: "user not found",
+			name: "user not found - GetUserByUsername",
 			setupDB: func(t *testing.T) *gorm.DB {
 				return fixture.NewFixture(t, &fixture.UserTestDB{})
 			},
@@ -252,7 +252,7 @@ func TestUserRepo_GetUserById(t *testing.T) {
 			},
 		},
 		{
-			name: "user not found",
+			name: "user not found - GetUserById",
 			setupDB: func(t *testing.T) *gorm.DB {
 				return fixture.NewFixture(t, &fixture.UserTestDB{})
 			},
@@ -405,7 +405,7 @@ func TestUserRepo_UpdateUser(t *testing.T) {
 			},
 		},
 		{
-			name: "user not found",
+			name: "user not found - UpdateUser",
 			setupDB: func(t *testing.T) *gorm.DB {
 				return fixture.NewFixture(t, &fixture.UserTestDB{})
 			},

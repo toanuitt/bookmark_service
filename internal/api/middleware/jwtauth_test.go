@@ -27,7 +27,6 @@ func TestJWTAuthMiddleware(t *testing.T) {
 		{
 			name:           "missing authorization header",
 			authHeader:     "",
-			setupMock:      func(m *jwtMocks.JWTValidator) {},
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody: map[string]any{
 				"error": "Authorization header is required",
@@ -37,7 +36,6 @@ func TestJWTAuthMiddleware(t *testing.T) {
 		{
 			name:           "wrong authorization format",
 			authHeader:     "BadFormatToken",
-			setupMock:      func(m *jwtMocks.JWTValidator) {},
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody: map[string]any{
 				"error": "Authorization header format is wrong",
