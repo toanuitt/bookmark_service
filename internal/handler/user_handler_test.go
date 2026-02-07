@@ -163,7 +163,7 @@ func TestUser_RegisterUser(t *testing.T) {
 }
 
 // TestUser_Login tests the Login handler
-func TestUser_Login(t *testing.T) {
+func TestUser_LoginUser(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -280,7 +280,7 @@ func TestUser_Login(t *testing.T) {
 }
 
 // TestUser_GetProfile tests the GetProfile handler
-func TestUser_GetProfile(t *testing.T) {
+func TestUser_GetProfileUser(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -360,7 +360,7 @@ func TestUser_GetProfile(t *testing.T) {
 }
 
 // TestUser_UpdateProfile tests the UpdateProfile handler
-func TestUser_UpdateProfile(t *testing.T) {
+func TestUser_UpdateProfileUser(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {

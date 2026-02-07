@@ -45,14 +45,14 @@ func (j *jwtAuth) JWTAuth() gin.HandlerFunc {
 			return
 		}
 		//verify token
-		user_id, ok := tokenContent["sub"]
+		userID, ok := tokenContent["sub"]
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Token"})
 			c.Abort()
 			return
 		}
 		//store user_id to context
-		c.Set("userID", user_id)
+		c.Set("userID", userID)
 		c.Next()
 	}
 }
