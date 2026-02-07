@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	jwtMocks "github.com/toanuitt/bookmark_service/pkg/jwtutils/mocks"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
@@ -39,6 +40,7 @@ func TestUrlShortenEndpoint(t *testing.T) {
 				}
 				jsonBody, _ := json.Marshal(body)
 				req := httptest.NewRequest(http.MethodPost, "/v1/links/shorten", bytes.NewReader(jsonBody))
+				req.Header.Set("Content-Type", "application/json")
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
@@ -49,15 +51,11 @@ func TestUrlShortenEndpoint(t *testing.T) {
 			expectedMessage: "Shorten URL generated successfully!",
 		},
 		{
-			name: "wrong input - empty url",
+			name: "invalid json",
 
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
-				body := map[string]any{
-					"url": "",
-					"exp": 10,
-				}
-				jsonBody, _ := json.Marshal(body)
-				req := httptest.NewRequest(http.MethodPost, "/v1/links/shorten", bytes.NewReader(jsonBody))
+				req := httptest.NewRequest(http.MethodPost, "/v1/links/shorten", bytes.NewReader([]byte(`{invalid-json`)))
+				req.Header.Set("Content-Type", "application/json")
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
@@ -65,7 +63,7 @@ func TestUrlShortenEndpoint(t *testing.T) {
 
 			expectedStatus:  http.StatusBadRequest,
 			expectedCodeLen: 0,
-			expectedMessage: "invalid request payload",
+			expectedMessage: "Something went wrong",
 		},
 	}
 
@@ -78,7 +76,7 @@ func TestUrlShortenEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t))
+			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
 			rec := tc.setupTestHTTP(app)
 
 			assert.Equal(t, tc.expectedStatus, rec.Code)
@@ -157,15 +155,13 @@ func TestUrlRedirectEndpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range testCases {
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
 
 			redisMock := tc.setupMock(ctx)
-			app := api.New(cfg, redisMock, sqldbPkg.InitMockDb(t))
+			app := api.New(cfg, redisMock, sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
 
 			rec := tc.setupTestHTTP(app)
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	jwtMocks "github.com/toanuitt/bookmark_service/pkg/jwtutils/mocks"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
@@ -30,7 +31,7 @@ func TestPasswordEndpoint(t *testing.T) {
 			name: "success",
 
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
-				req := httptest.NewRequest(http.MethodGet, "/gen-pass", nil)
+				req := httptest.NewRequest(http.MethodGet, "/v1/gen-pass", nil)
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
@@ -45,7 +46,7 @@ func TestPasswordEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := api.New(&api.Config{}, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t))
+			app := api.New(&api.Config{}, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
 			rec := tc.setupTestHTTP(app)
 
 			assert.Equal(t, tc.expectedStatus, rec.Code)

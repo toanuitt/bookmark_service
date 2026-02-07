@@ -4,6 +4,8 @@ import (
 	_ "github.com/toanuitt/bookmark_service/docs"
 	"github.com/toanuitt/bookmark_service/internal/api"
 	"github.com/toanuitt/bookmark_service/internal/model"
+	"github.com/toanuitt/bookmark_service/pkg/common"
+	"github.com/toanuitt/bookmark_service/pkg/jwtutils"
 	"github.com/toanuitt/bookmark_service/pkg/logger"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
@@ -22,23 +24,27 @@ import (
 // @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:8080
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter your Bearer token in the format: Bearer {token}
 func main() {
 	logger.SetLogLevel()
 	cfg, err := api.NewConfig()
-	if err != nil {
-		panic(err)
-	}
+	common.HandleError(err)
+
 	redisClient, err := redisPkg.NewRedisClient("")
-	if err != nil {
-		panic(err)
-	}
+	common.HandleError(err)
 
 	db, err := sqldbPkg.NewClient("")
-	if err != nil {
-		panic(err)
-	}
-	db.AutoMigrate(&model.User{})
+	common.HandleError(err)
+	common.HandleError(db.AutoMigrate(&model.User{}))
 
-	app := api.New(cfg, redisClient, db)
+	jwtGen, err := jwtutils.NewJWTGenerator("./private.pem")
+	common.HandleError(err)
+	jwtValidator, err := jwtutils.NewJWTValidator("./public.pem")
+	common.HandleError(err)
+
+	app := api.New(cfg, redisClient, db, jwtGen, jwtValidator)
 	app.Start()
 }

@@ -36,6 +36,29 @@ definitions:
         example: bookmark_service
         type: string
     type: object
+  handler.loginInputBody:
+    properties:
+      password:
+        minLength: 8
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handler.loginResBody:
+    properties:
+      data:
+        type: string
+      message:
+        type: string
+    type: object
+  handler.profileResBody:
+    properties:
+      data:
+        $ref: '#/definitions/model.User'
+    type: object
   handler.registerInputBody:
     properties:
       display_name:
@@ -43,6 +66,7 @@ definitions:
       email:
         type: string
       password:
+        minLength: 8
         type: string
       username:
         type: string
@@ -51,6 +75,48 @@ definitions:
     - email
     - password
     - username
+    type: object
+  handler.registerResBody:
+    properties:
+      data:
+        $ref: '#/definitions/handler.registerUserData'
+      message:
+        type: string
+    type: object
+  handler.registerUserData:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  handler.updateProfileInputBody:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+    type: object
+  model.User:
+    properties:
+      created_at:
+        type: string
+      display_name:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
     type: object
   response.Response:
     properties:
@@ -72,7 +138,7 @@ info:
   title: BookMark_Service API
   version: "1.2"
 paths:
-  /gen-pass:
+  /v1/gen-pass:
     get:
       description: Generates a cryptographically secure random password
       produces:
@@ -89,7 +155,7 @@ paths:
       summary: Generate a random password
       tags:
       - password
-  /health-check:
+  /v1/health-check:
     get:
       description: Health check
       produces:
@@ -166,6 +232,102 @@ paths:
       summary: Shorten URL
       tags:
       - URL Shortener
+  /v1/self/info:
+    get:
+      consumes:
+      - application/json
+      description: Get profile of the currently authenticated user using JWT in Authorization
+        header
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.profileResBody'
+        "401":
+          description: Invalid or missing token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update display name and/or email of the currently authenticated
+        user
+      parameters:
+      - description: Update profile request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.updateProfileInputBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: No data provided for update
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Invalid or missing token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User does not exist
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - Users
+  /v1/users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with username and password, returns a JWT token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.loginInputBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.loginResBody'
+        "400":
+          description: Invalid username or password
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Login a user
+      tags:
+      - Users
   /v1/users/register:
     post:
       consumes:
@@ -183,18 +345,24 @@ paths:
       - application/json
       responses:
         "200":
-          description: Register success
+          description: OK
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/handler.registerResBody'
         "400":
-          description: Invalid request or missing required fields
+          description: Bad Request
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal server error
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response'
       summary: Register a new user
       tags:
       - Users
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter your Bearer token in the format: Bearer {token}'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

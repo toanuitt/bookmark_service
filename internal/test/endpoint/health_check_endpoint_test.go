@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/toanuitt/bookmark_service/internal/api"
+	jwtMocks "github.com/toanuitt/bookmark_service/pkg/jwtutils/mocks"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
 	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
@@ -39,7 +40,7 @@ func TestHealthCheckEndpoint(t *testing.T) {
 			name: "success",
 
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
-				req := httptest.NewRequest(http.MethodGet, "/health-check", nil)
+				req := httptest.NewRequest(http.MethodGet, "/v1/health-check", nil)
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
@@ -59,7 +60,7 @@ func TestHealthCheckEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t))
+			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
 			rec := tc.setupTestHTTP(app)
 
 			assert.Equal(t, tc.expectedStatus, rec.Code)

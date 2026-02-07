@@ -2,3 +2,7 @@ coverage.html
 coverage.out
 coverage.tmp
 makefile
+# RSA keys
+private.pem
+public.pem
+*.key

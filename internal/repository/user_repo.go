@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/toanuitt/bookmark_service/internal/model"
+	"github.com/toanuitt/bookmark_service/pkg/dbutils"
 	"gorm.io/gorm"
 )
 
@@ -14,12 +14,10 @@ import (
 // UserRepo defines the interface for user persistence operations.
 type UserRepo interface {
 	CreateUser(ctx context.Context, newUser *model.User) (*model.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
+	GetUserById(ctx context.Context, userID string) (*model.User, error)
+	UpdateUser(ctx context.Context, userID string, displayName string, email string) error
 }
-
-var (
-	// ErrDuplicateKey is returned when a unique constraint is violated (duplicate username).
-	ErrDuplicateKey = errors.New("UNIQUE constraint failed: users.username")
-)
 
 type user struct {
 	db *gorm.DB
@@ -35,10 +33,41 @@ func NewUserRepository(db *gorm.DB) UserRepo {
 func (r *user) CreateUser(ctx context.Context, newUser *model.User) (*model.User, error) {
 	err := r.db.WithContext(ctx).Create(newUser).Error
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique constraint") {
-			return nil, ErrDuplicateKey
-		}
-		return nil, err
+		return nil, dbutils.CatchDBErr(err)
 	}
 	return newUser, nil
+}
+
+func (r *user) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+	return r.GetUserByField(ctx, "username", username)
+}
+
+func (r *user) GetUserById(ctx context.Context, userID string) (*model.User, error) {
+	return r.GetUserByField(ctx, "id", userID)
+}
+
+func (r *user) GetUserByField(ctx context.Context, field string, value string) (*model.User, error) {
+	chosenUser := &model.User{}
+	err := r.db.WithContext(ctx).Where(fmt.Sprintf("%s = ?", field), value).First(chosenUser).Error
+	if err != nil {
+		return nil, dbutils.CatchDBErr(err)
+	}
+
+	return chosenUser, nil
+}
+
+func (r *user) UpdateUser(ctx context.Context, userID string, displayName string, email string) error {
+	updates := make(map[string]any)
+	if displayName != "" {
+		updates["display_name"] = displayName
+	}
+	if email != "" {
+		updates["email"] = email
+	}
+	err := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error
+	if err != nil {
+		return dbutils.CatchDBErr(err)
+	}
+
+	return nil
 }

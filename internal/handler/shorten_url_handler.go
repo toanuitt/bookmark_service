@@ -7,7 +7,9 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/toanuitt/bookmark_service/internal/handler/utils"
 	"github.com/toanuitt/bookmark_service/internal/service"
+	"github.com/toanuitt/bookmark_service/pkg/response"
 )
 
 // ShortenURLhandler defines the interface for handling URL shortening HTTP requests.
@@ -49,17 +51,15 @@ func NewShortenURL(shortenUrlSvc service.ShortenURLservice) ShortenURLhandler {
 // @Failure 500 {object} map[string]string "Internal Server Error"
 // @Router /v1/links/shorten [post]
 func (h *shortenUrl) ShortenURL(c *gin.Context) {
-	req := &ShortenURLRequest{}
-
-	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request payload"})
+	req, err := utils.BindInputFromRequest[ShortenURLRequest](c)
+	if err != nil {
 		return
 	}
 
 	code, err := h.svc.ShortlengthURL(c, req.URL, req.ExpireIn)
 	if err != nil {
 		log.Error().Str("url", req.URL).Err(err).Msg("Service return error on ShortenUrl")
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+		c.JSON(http.StatusInternalServerError, response.InternalErrorResponse)
 		return
 	}
 
@@ -101,9 +101,7 @@ func (h *shortenUrl) GetURL(c *gin.Context) {
 		}
 
 		log.Error().Err(err).Msg("Service return error on GetURL")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
-		})
+		c.JSON(http.StatusInternalServerError, response.InternalErrorResponse)
 		return
 	}
 
