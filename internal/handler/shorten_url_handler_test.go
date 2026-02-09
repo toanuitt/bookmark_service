@@ -66,7 +66,7 @@ func TestShortenURL_ShortenURL(t *testing.T) {
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectedResp: ShortenURLResponse{
-				Message: "internal server error",
+				Message: "Something went wrong",
 				Code:    "",
 			},
 		},
@@ -87,7 +87,7 @@ func TestShortenURL_ShortenURL(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectedResp: ShortenURLResponse{
-				Message: "invalid request payload",
+				Message: "Invalid request",
 				Code:    "",
 			},
 		},
@@ -183,7 +183,7 @@ func TestShortenURL_GetURL(t *testing.T) {
 				return mockSvc
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"message":"internal server error"}`,
+			expectedBody:   `{"message":"Something went wrong"}`,
 		},
 		{
 			name: "invalid param",

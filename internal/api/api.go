@@ -5,17 +5,16 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/toanuitt/bookmark_service/docs"
+	"github.com/toanuitt/bookmark_service/internal/api/middleware"
 	"github.com/toanuitt/bookmark_service/internal/handler"
 	"github.com/toanuitt/bookmark_service/internal/repository"
 	"github.com/toanuitt/bookmark_service/internal/service"
+	"github.com/toanuitt/bookmark_service/pkg/jwtutils"
 	"github.com/toanuitt/bookmark_service/pkg/stringutils"
-	"github.com/toanuitt/bookmark_service/pkg/validation"
 	"gorm.io/gorm"
 )
 
@@ -29,22 +28,25 @@ type Engine interface {
 // api is the concrete implementation of the Engine interface.
 // It manages the Gin HTTP engine and application configuration.
 type api struct {
-	app         *gin.Engine
-	cfg         *Config
-	redisClient *redis.Client
-	db          *gorm.DB
+	app          *gin.Engine
+	cfg          *Config
+	redisClient  *redis.Client
+	db           *gorm.DB
+	jwtGen       jwtutils.JWTGenerator
+	jwtValidator jwtutils.JWTValidator
 }
 
 // New creates and returns a new Engine instance with initialized routes and handlers.
 // It takes a Config parameter to configure the API engine.
-func New(cfg *Config, redisClient *redis.Client, db *gorm.DB) Engine {
+func New(cfg *Config, redisClient *redis.Client, db *gorm.DB, jwtGen jwtutils.JWTGenerator, jwtValidator jwtutils.JWTValidator) Engine {
 	a := &api{
-		app:         gin.New(),
-		cfg:         cfg,
-		redisClient: redisClient,
-		db:          db,
+		app:          gin.New(),
+		cfg:          cfg,
+		redisClient:  redisClient,
+		db:           db,
+		jwtGen:       jwtGen,
+		jwtValidator: jwtValidator,
 	}
-	a.registerValidations()
 	a.RegisterEP()
 	return a
 }
@@ -57,12 +59,6 @@ func (a *api) Start() error {
 // ServeHTTP implements the http.Handler interface, allowing the API engine to serve HTTP requests.
 func (a *api) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.app.ServeHTTP(w, r)
-}
-
-func (a *api) registerValidations() {
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("password_strength", validation.ValidateStrongPassword)
-	}
 }
 
 // RegisterEP registers all API endpoints and their corresponding handlers.
@@ -85,7 +81,7 @@ func (a *api) RegisterEP() {
 	passSvc := service.NewPassword()
 	healthSvc := service.NewHealthCheck(a.cfg.ServiceName, a.cfg.InstanceID, healthCheckRepo)
 	urlshortenSvc := service.NewShortenURL(urlRepo, stringutils.NewCodeGenerator())
-	userSvc := service.NewUser(userRepo)
+	userSvc := service.NewUser(userRepo, a.jwtGen)
 
 	//handler
 	passHandler := handler.NewPassword(passSvc)
@@ -94,16 +90,24 @@ func (a *api) RegisterEP() {
 	userHandler := handler.NewUser(userSvc)
 
 	//Router
-	a.app.GET("/gen-pass", passHandler.GenPass)
 	docs.SwaggerInfo.Host = a.cfg.AppHostName
-	a.app.GET("/health-check", healthHandler.CheckHealth)
-	routers := a.app.Group("/v1")
-	{
-		routers.POST("/links/shorten", urlshortenHandler.ShortenURL)
-		routers.GET("/links/redirect/:code", urlshortenHandler.GetURL)
-		routers.POST("/users/register", userHandler.RegisterUser)
-	}
-	// Register Swagger documentation endpoint
 	a.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	v1PublicRoutes := a.app.Group("/v1")
+	{
+		v1PublicRoutes.GET("/gen-pass", passHandler.GenPass)
+		v1PublicRoutes.GET("/health-check", healthHandler.CheckHealth)
+		v1PublicRoutes.POST("/links/shorten", urlshortenHandler.ShortenURL)
+		v1PublicRoutes.GET("/links/redirect/:code", urlshortenHandler.GetURL)
+		v1PublicRoutes.POST("/users/register", userHandler.RegisterUser)
+		v1PublicRoutes.POST("/users/login", userHandler.Login)
+	}
+	jwtMiddleware := middleware.NewJWTAuth(a.jwtValidator)
+	a.app.Use(jwtMiddleware.JWTAuth())
+	v1PrivateRoutes := a.app.Group("/v1")
+	{
+		v1PrivateRoutes.GET("/self/info", userHandler.GetProfile)
+		v1PrivateRoutes.PUT("/self/info", userHandler.UpdateProfile)
+	}
 
 }

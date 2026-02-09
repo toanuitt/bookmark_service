@@ -27,7 +27,7 @@ func TestHealthCheckHanlder_CheckHealth(t *testing.T) {
 		{
 			name: "normal case",
 			setupRequest: func(ctx *gin.Context) {
-				ctx.Request = httptest.NewRequest(http.MethodGet, "/health-check", nil)
+				ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/health-check", nil)
 			},
 			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.HealthCheck {
 				mockSvc := mocks.NewHealthCheck(t)
@@ -41,7 +41,7 @@ func TestHealthCheckHanlder_CheckHealth(t *testing.T) {
 			name: "error case",
 
 			setupRequest: func(ctx *gin.Context) {
-				ctx.Request = httptest.NewRequest(http.MethodGet, "/health-check", nil)
+				ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/health-check", nil)
 			},
 			setupMockSvc: func(t *testing.T, ctx *gin.Context) *mocks.HealthCheck {
 				mockSvc := mocks.NewHealthCheck(t)

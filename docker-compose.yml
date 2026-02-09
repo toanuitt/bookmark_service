@@ -16,6 +16,9 @@ services:
       - "8080:8080"
     environment:
        - REDIS_ADDR=redis:6379
+    volumes:
+      - ./public.pem:/app/public.pem:Z
+      - ./private.pem:/app/private.pem:Z
   
   postgres:
     image: postgres:alpine

@@ -64,3 +64,12 @@ DOCKER_PASSWORD?=
 DOCKER_USERNAME?=
 docker-login:
 	echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+	
+.PHONY: build
+
+PRIVATE_KEY ?= ./private.pem
+PUBLIC_KEY ?= ./public.pem
+
+generate-rsa-key:
+	openssl genpkey -algorithm RSA -out $(PRIVATE_KEY) -pkeyopt rsa_keygen_bits:2048
+	openssl rsa -pubout -in $(PRIVATE_KEY) -out $(PUBLIC_KEY)

@@ -38,7 +38,7 @@ func NewHealthCheck(svc service.HealthCheck) HealthCheck {
 // @Produce json
 // @Success 200 {object} healthCheckResponse
 // @Failure 500 {string} Internal Server Error
-// @Router /health-check [get]
+// @Router /v1/health-check [get]
 func (h *healthHandler) CheckHealth(c *gin.Context) {
 	message, serviceName, instanceID, err := h.svc.CheckStatus(c)
 	if err != nil {
