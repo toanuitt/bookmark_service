@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -22,13 +21,6 @@ func NewConfig() (*Config, error) {
 	err := envconfig.Process("", cfg)
 	if err != nil {
 		return nil, err
-	}
-	if cfg.InstanceID == "" {
-		id, err := uuid.NewV7()
-		if err != nil {
-			return nil, err
-		}
-		cfg.InstanceID = id.String()
 	}
 	return cfg, nil
 }

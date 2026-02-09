@@ -2,15 +2,15 @@ package endpoint
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/toanuitt/bookmark_service/internal/api"
-	jwtMocks "github.com/toanuitt/bookmark_service/pkg/jwtutils/mocks"
 	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
-	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
 
 // TestHealthCheckEndpoint tests the healthCheckEndpoint function.
@@ -29,47 +29,42 @@ func TestHealthCheckEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name string
-
-		setupTestHTTP func(api api.Engine) *httptest.ResponseRecorder
-
+		name           string
+		setupTestHTTP  func(api api.Engine) *httptest.ResponseRecorder
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
 			name: "success",
-
 			setupTestHTTP: func(api api.Engine) *httptest.ResponseRecorder {
 				req := httptest.NewRequest(http.MethodGet, "/v1/health-check", nil)
 				respRec := httptest.NewRecorder()
 				api.ServeHTTP(respRec, req)
 				return respRec
 			},
-
 			expectedStatus: http.StatusOK,
 			expectedBody:   `{"message":"OK","serviceName":"bookmark-service","instanceID":"instance-test"}`,
 		},
 	}
 
-	cfg, err := api.NewConfig()
-	if err != nil {
-		panic(err)
+	cfg := &api.Config{
+		ServiceName: "bookmark-service",
+		InstanceID:  "instance-test",
 	}
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
+			app := api.New(&api.EngineOpts{
+				Engine: gin.New(),
+				Cfg:    cfg,
+				Redis:  redisPkg.InitMockRedis(t),
+			})
 			rec := tc.setupTestHTTP(app)
-
 			assert.Equal(t, tc.expectedStatus, rec.Code)
-
 			var resp map[string]string
-
-			err = json.Unmarshal(rec.Body.Bytes(), &resp)
+			fmt.Println(resp)
+			err := json.Unmarshal(rec.Body.Bytes(), &resp)
 			assert.NoError(t, err)
-
 			assert.Equal(t, "OK", resp["message"])
 			assert.NotEmpty(t, resp["instance_id"])
 			assert.NotEmpty(t, resp["service_name"])

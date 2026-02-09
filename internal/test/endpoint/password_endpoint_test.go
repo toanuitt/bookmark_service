@@ -5,11 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/toanuitt/bookmark_service/internal/api"
-	jwtMocks "github.com/toanuitt/bookmark_service/pkg/jwtutils/mocks"
-	redisPkg "github.com/toanuitt/bookmark_service/pkg/redis"
-	sqldbPkg "github.com/toanuitt/bookmark_service/pkg/sqldb"
 )
 
 // TestPasswordEndpoint tests the password endpoint of the API.
@@ -45,10 +43,11 @@ func TestPasswordEndpoint(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			app := api.New(&api.Config{}, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
+			app := api.New(&api.EngineOpts{
+				Engine: gin.New(),
+				Cfg:    &api.Config{},
+			})
 			rec := tc.setupTestHTTP(app)
-
 			assert.Equal(t, tc.expectedStatus, rec.Code)
 			assert.Equal(t, tc.expectedRespLen, rec.Body.Len())
 		})
