@@ -1,7 +1,6 @@
 package sqldb
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,27 +8,6 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	t.Parallel()
-
-	// Save old env to restore later
-	oldEnv := map[string]string{
-		"DB_HOST":     os.Getenv("DB_HOST"),
-		"DB_USER":     os.Getenv("DB_USER"),
-		"DB_PASSWORD": os.Getenv("DB_PASSWORD"),
-		"DB_NAME":     os.Getenv("DB_NAME"),
-		"DB_PORT":     os.Getenv("DB_PORT"),
-	}
-
-	t.Cleanup(func() {
-		for k, v := range oldEnv {
-			if v == "" {
-				_ = os.Unsetenv(k)
-			} else {
-				_ = os.Setenv(k, v)
-			}
-		}
-	})
-
 	testcases := []struct {
 		name     string
 		env      map[string]string
@@ -67,25 +45,12 @@ func TestNewConfig(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Clear related env first
-			_ = os.Unsetenv("DB_HOST")
-			_ = os.Unsetenv("DB_USER")
-			_ = os.Unsetenv("DB_PASSWORD")
-			_ = os.Unsetenv("DB_NAME")
-			_ = os.Unsetenv("DB_PORT")
-
-			// Set env for this test case
 			for k, v := range tc.env {
-				_ = os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
-
 			cfg, err := NewConfig("")
-
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
-
 			assert.Equal(t, tc.expected, cfg)
 		})
 	}

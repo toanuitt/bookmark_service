@@ -57,23 +57,15 @@ func Test_newConfig(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			_ = os.Unsetenv("Redis_Addr")
-			_ = os.Unsetenv("REDIS_PASSWORD")
-			_ = os.Unsetenv("REDIS_DB")
 
 			for k, v := range tc.env {
 				_ = os.Setenv(k, v)
 			}
-
 			cfg, err := newConfig("")
-
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
-
 			assert.Equal(t, tc.expected, cfg)
 		})
 	}
