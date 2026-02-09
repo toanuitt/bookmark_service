@@ -15,13 +15,8 @@ var (
 	lowerRegex    = regexp.MustCompile(`[a-z]`)
 	numberRegex   = regexp.MustCompile(`[0-9]`)
 	specialRegex  = regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]`)
-	validate      *validator.Validate
+	validate      = validator.New(validator.WithRequiredStructEnabled())
 )
-
-func init() {
-	validate = validator.New(validator.WithRequiredStructEnabled())
-	validate.RegisterValidation("password", ValidateStrongPassword)
-}
 
 // ValidateStrongPassword validates a password using regex patterns.
 // The password must satisfy the following conditions:
@@ -74,7 +69,6 @@ func BindInputFromRequest[T any](c *gin.Context) (*T, error) {
 		return nil, err
 	}
 
-	validate := validator.New(validator.WithRequiredStructEnabled())
 	validate.RegisterValidation("password", ValidateStrongPassword)
 
 	if err := validate.Struct(reqInput); err != nil {
