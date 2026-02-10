@@ -1,4 +1,4 @@
-package repository
+package ping
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 // HealthCheckRepo defines the interface for health check repository operations.
 //
-//go:generate mockery --name=HealthCheckRepo  --filename health_repo.go
+//go:generate mockery --name=HealthCheckRepo  --filename ping.go
 type HealthCheckRepo interface {
 	Ping(ctx context.Context) error
 }
@@ -21,9 +21,4 @@ type healthCheckStorage struct {
 // NewHealthCheckStorage creates and returns a new HealthCheckRepo instance.
 func NewHealthCheckStorage(redisClient *redis.Client) HealthCheckRepo {
 	return &healthCheckStorage{redisClient: redisClient}
-}
-
-// Ping checks the health of the Redis connection.
-func (r *healthCheckStorage) Ping(ctx context.Context) error {
-	return r.redisClient.Ping(ctx).Err()
 }
