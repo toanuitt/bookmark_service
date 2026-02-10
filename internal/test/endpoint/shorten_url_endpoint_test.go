@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,14 @@ func TestUrlShortenEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := api.New(cfg, redisPkg.InitMockRedis(t), sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
+			app := api.New(&api.EngineOpts{
+				Engine:       gin.New(),
+				Cfg:          cfg,
+				Redis:        redisPkg.InitMockRedis(t),
+				SqlDB:        sqldbPkg.InitMockDb(t),
+				JWTGenerator: jwtMocks.NewJWTGenerator(t),
+				JWTValidator: jwtMocks.NewJWTValidator(t),
+			})
 			rec := tc.setupTestHTTP(app)
 
 			assert.Equal(t, tc.expectedStatus, rec.Code)
@@ -161,7 +169,11 @@ func TestUrlRedirectEndpoint(t *testing.T) {
 			ctx := context.Background()
 
 			redisMock := tc.setupMock(ctx)
-			app := api.New(cfg, redisMock, sqldbPkg.InitMockDb(t), jwtMocks.NewJWTGenerator(t), jwtMocks.NewJWTValidator(t))
+			app := api.New(&api.EngineOpts{
+				Engine: gin.New(),
+				Cfg:    cfg,
+				Redis:  redisMock,
+			})
 
 			rec := tc.setupTestHTTP(app)
 

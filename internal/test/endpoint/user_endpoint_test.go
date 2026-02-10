@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -35,16 +36,11 @@ const (
 	testPassword    = "TestPassword@123"
 )
 
+// =========================
 // Test infrastructure
+// =========================
 
-type testApp struct {
-	api    api.Engine
-	db     *gorm.DB
-	jwtGen *jwtMocks.JWTGenerator
-	jwtVal *jwtMocks.JWTValidator
-}
-
-func newTestApp(t *testing.T, jwtGen *jwtMocks.JWTGenerator, jwtVal *jwtMocks.JWTValidator) *testApp {
+func newTestApp(t *testing.T, jwtGen *jwtMocks.JWTGenerator, jwtVal *jwtMocks.JWTValidator) (api.Engine, *gorm.DB) {
 	t.Helper()
 
 	cfg, err := api.NewConfig()
@@ -53,27 +49,34 @@ func newTestApp(t *testing.T, jwtGen *jwtMocks.JWTGenerator, jwtVal *jwtMocks.JW
 	db := sqldbPkg.InitMockDb(t)
 	require.NoError(t, db.AutoMigrate(&model.User{}))
 
-	return &testApp{
-		api:    api.New(cfg, redisPkg.InitMockRedis(t), db, jwtGen, jwtVal),
-		db:     db,
-		jwtGen: jwtGen,
-		jwtVal: jwtVal,
+	opts := &api.EngineOpts{
+		Engine:       gin.New(),
+		Cfg:          cfg,
+		Redis:        redisPkg.InitMockRedis(t),
+		SqlDB:        db,
+		JWTGenerator: jwtGen,
+		JWTValidator: jwtVal,
 	}
+
+	engine := api.New(opts)
+	return engine, db
 }
 
-func (ta *testApp) seedUser(t *testing.T, user *model.User) {
+func seedUser(t *testing.T, db *gorm.DB, user *model.User) {
 	t.Helper()
-	err := ta.db.Create(user).Error
+	err := db.Create(user).Error
 	require.NoError(t, err)
 }
 
-func (ta *testApp) executeRequest(req *http.Request) *httptest.ResponseRecorder {
+func executeRequest(engine api.Engine, req *http.Request) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	ta.api.ServeHTTP(rec, req)
+	engine.ServeHTTP(rec, req)
 	return rec
 }
 
+// =========================
 // Request builders
+// =========================
 
 func newJSONRequest(t *testing.T, method, url string, body any) *http.Request {
 	t.Helper()
@@ -105,7 +108,9 @@ func newAuthenticatedRequest(t *testing.T, method, url string, body any, token s
 	return req
 }
 
+// =========================
 // Mock builders
+// =========================
 
 func mockJWTGeneratorSuccess(t *testing.T) *jwtMocks.JWTGenerator {
 	t.Helper()
@@ -135,7 +140,9 @@ func mockJWTValidatorNoop(t *testing.T) *jwtMocks.JWTValidator {
 	return jwtMocks.NewJWTValidator(t)
 }
 
+// =========================
 // Test data builders
+// =========================
 
 func validRegisterBody() map[string]string {
 	return map[string]string{
@@ -175,7 +182,9 @@ func defaultTestUser() *model.User {
 	}
 }
 
+// =========================
 // Tests
+// =========================
 
 func TestUserRegisterEndpoint(t *testing.T) {
 	t.Parallel()
@@ -207,7 +216,7 @@ func TestUserRegisterEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := newTestApp(t, mockJWTGeneratorNoop(t), mockJWTValidatorNoop(t))
+			engine, _ := newTestApp(t, mockJWTGeneratorNoop(t), mockJWTValidatorNoop(t))
 
 			var req *http.Request
 			if tc.rawBody != nil {
@@ -216,7 +225,7 @@ func TestUserRegisterEndpoint(t *testing.T) {
 				req = newJSONRequest(t, http.MethodPost, registerEndpoint, tc.requestBody)
 			}
 
-			rec := app.executeRequest(req)
+			rec := executeRequest(engine, req)
 			assert.Equal(t, tc.expectedStatus, rec.Code)
 		})
 	}
@@ -230,14 +239,14 @@ func TestUserLoginEndpoint(t *testing.T) {
 		setupJWT       func(t *testing.T) *jwtMocks.JWTGenerator
 		requestBody    any
 		rawBody        []byte
-		seedUser       bool
+		seedUserFlag   bool
 		expectedStatus int
 	}{
 		{
 			name:           "success - valid user login",
 			setupJWT:       mockJWTGeneratorSuccess,
 			requestBody:    validLoginBody(),
-			seedUser:       true,
+			seedUserFlag:   true,
 			expectedStatus: http.StatusOK,
 		},
 		{
@@ -253,10 +262,10 @@ func TestUserLoginEndpoint(t *testing.T) {
 			t.Parallel()
 
 			jwtGen := tc.setupJWT(t)
-			app := newTestApp(t, jwtGen, mockJWTValidatorNoop(t))
+			engine, db := newTestApp(t, jwtGen, mockJWTValidatorNoop(t))
 
-			if tc.seedUser {
-				app.seedUser(t, defaultTestUser())
+			if tc.seedUserFlag {
+				seedUser(t, db, defaultTestUser())
 			}
 
 			var req *http.Request
@@ -266,7 +275,7 @@ func TestUserLoginEndpoint(t *testing.T) {
 				req = newJSONRequest(t, http.MethodPost, loginEndpoint, tc.requestBody)
 			}
 
-			rec := app.executeRequest(req)
+			rec := executeRequest(engine, req)
 			assert.Equal(t, tc.expectedStatus, rec.Code)
 
 			if rec.Code != http.StatusOK && tc.expectedStatus == http.StatusOK {
@@ -306,15 +315,15 @@ func TestGetProfileEndpoint(t *testing.T) {
 			t.Parallel()
 
 			jwtVal := tc.setupJWT(t)
-			app := newTestApp(t, mockJWTGeneratorNoop(t), jwtVal)
-			app.seedUser(t, defaultTestUser())
+			engine, db := newTestApp(t, mockJWTGeneratorNoop(t), jwtVal)
+			seedUser(t, db, defaultTestUser())
 
 			req := httptest.NewRequest(http.MethodGet, selfInfoEndpoint, nil)
 			if tc.withAuthToken {
 				req.Header.Set(headerAuth, testBearerToken)
 			}
 
-			rec := app.executeRequest(req)
+			rec := executeRequest(engine, req)
 			assert.Equal(t, tc.expectedStatus, rec.Code)
 		})
 	}
@@ -362,15 +371,15 @@ func TestUpdateProfileEndpoint(t *testing.T) {
 			t.Parallel()
 
 			jwtVal := tc.setupJWT(t)
-			app := newTestApp(t, mockJWTGeneratorNoop(t), jwtVal)
-			app.seedUser(t, defaultTestUser())
+			engine, db := newTestApp(t, mockJWTGeneratorNoop(t), jwtVal)
+			seedUser(t, db, defaultTestUser())
 
 			req := newJSONRequest(t, http.MethodPut, selfInfoEndpoint, tc.requestBody)
 			if tc.withAuthToken {
 				req.Header.Set(headerAuth, testBearerToken)
 			}
 
-			rec := app.executeRequest(req)
+			rec := executeRequest(engine, req)
 			assert.Equal(t, tc.expectedStatus, rec.Code)
 		})
 	}

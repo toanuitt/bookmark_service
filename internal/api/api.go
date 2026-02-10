@@ -36,16 +36,25 @@ type api struct {
 	jwtValidator jwtutils.JWTValidator
 }
 
+type EngineOpts struct {
+	Engine       *gin.Engine
+	Cfg          *Config
+	Redis        *redis.Client
+	SqlDB        *gorm.DB
+	JWTGenerator jwtutils.JWTGenerator
+	JWTValidator jwtutils.JWTValidator
+}
+
 // New creates and returns a new Engine instance with initialized routes and handlers.
 // It takes a Config parameter to configure the API engine.
-func New(cfg *Config, redisClient *redis.Client, db *gorm.DB, jwtGen jwtutils.JWTGenerator, jwtValidator jwtutils.JWTValidator) Engine {
+func New(opts *EngineOpts) Engine {
 	a := &api{
-		app:          gin.New(),
-		cfg:          cfg,
-		redisClient:  redisClient,
-		db:           db,
-		jwtGen:       jwtGen,
-		jwtValidator: jwtValidator,
+		app:          opts.Engine,
+		cfg:          opts.Cfg,
+		redisClient:  opts.Redis,
+		db:           opts.SqlDB,
+		jwtGen:       opts.JWTGenerator,
+		jwtValidator: opts.JWTValidator,
 	}
 	a.RegisterEP()
 	return a
